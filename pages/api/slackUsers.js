@@ -3,38 +3,79 @@ import { getCachedData, setCachedData } from '../../lib/cache';
 
 export default async function handler(req, res) {
     const token = process.env.SLACK_BOT_TOKEN;
+    let allUsers = [];
+    let cursor;
+
+    // Retrieve cache time from environment variables (in seconds)
+    const cacheTimeEnv = process.env.SLACK_DATA_CACHE_TIME || '1800'; // Default to 1800 seconds (30 minutes)
+    const cacheTime = parseInt(cacheTimeEnv, 10); // Convert to integer
+
+    // Check if cacheTime is a valid number
+    if (isNaN(cacheTime) || cacheTime <= 0) {
+        console.warn(`Invalid SLACK_DATA_CACHE_TIME value: ${cacheTimeEnv}. Falling back to default of 1800 seconds.`);
+    }
+
+    const effectiveCacheTime = (!isNaN(cacheTime) && cacheTime > 0) ? cacheTime : 1800; // Default to 1800 seconds if invalid
 
     // Check for cached users
-    const cachedUsers = getCachedData('users');
-    if (cachedUsers) {
-        return res.status(200).json(cachedUsers);
+    const cachedData = getCachedData('users');
+    if (cachedData) {
+        const { users: cachedUsers, timestamp } = cachedData;
+        const currentTime = Date.now();
+        const elapsedSeconds = (currentTime - timestamp) / 1000; // Convert to seconds
+
+        if (elapsedSeconds < effectiveCacheTime) {
+            // Cache is still valid
+            return res.status(200).json(cachedUsers);
+        } else {
+            // Cache has expired
+            // Optionally, you can remove the expired cache
+            // removeCachedData('users');
+        }
     }
 
     try {
-        const response = await fetch('https://slack.com/api/users.list', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        do {
+            const url = new URL('https://slack.com/api/users.list');
+            // Specify the number of users per request
+            url.searchParams.append('limit', '200');
+            if (cursor) {
+                url.searchParams.append('cursor', cursor);
+            }
 
-        const data = await response.json();
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
 
-        if (!data.ok) {
-            return res.status(500).json({ error: data.error });
-        }
+            const data = await response.json();
 
-        const users = data.members.map(user => ({
+            if (!data.ok) {
+                console.error('Error fetching users:', data.error);
+                return res.status(500).json({ error: data.error });
+            }
+
+            // Filter out deactivated users and bots
+            const activeUsers = data.members.filter(user => !user.deleted && !user.is_bot);
+            allUsers = allUsers.concat(activeUsers);
+
+            cursor = data.response_metadata?.next_cursor; // Get the next cursor for pagination
+        } while (cursor);
+
+        const users = allUsers.map(user => ({
             id: user.id,
-            name: user.profile.display_name,
+            name: user.profile.display_name || user.real_name || user.name,
         }));
 
-        // Cache the users
-        setCachedData('users', users);
+        // Cache the users with the current timestamp
+        setCachedData('users', { users, timestamp: Date.now() });
 
         res.status(200).json(users);
     } catch (error) {
+        console.error('Error fetching users:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 }

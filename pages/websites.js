@@ -7,9 +7,11 @@ import {
   CardContent, 
   CardDescription 
 } from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { Spinner } from '@/components/ui/spinner';
+import { Palette } from "lucide-react"
 
 const Websites = () => {
     const [websites, setWebsites] = useState([]);
@@ -66,30 +68,36 @@ const Websites = () => {
             <div className="max-w-5xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-4xl font-bold">Websites List</h1>
-                    <Button variant="ghost" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-                        Toggle Theme
+                    <div className="flex gap-2">
+                    <Button>Request create</Button>
+                    <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+                        <Palette />
                     </Button>
+                    </div>
                 </div>
                 <div className="space-y-4">
                     {websites.map((website) => (
                         <Card key={website.id}>
                             <CardHeader>
                                 <CardTitle>
+                                {website.friendly_name}
+                                </CardTitle>
+                                <CardDescription>
                                     <Link 
                                         href={website.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="hover:underline"
                                     >
-                                        {website.friendly_name}
+                                        {website.url}
                                     </Link>
-                                </CardTitle>
-                                <CardDescription>{website.url}</CardDescription>
+                                </CardDescription>
                             </CardHeader>
                             <CardContent className="flex justify-end">
-                                <Button onClick={() => handleEditContacts(website.id)}>
+                                <Button variant="secondary" onClick={() => handleEditContacts(website.id)}>
                                     Edit Contacts
                                 </Button>
+                                <Button variant="destructive">Request delete</Button>
                             </CardContent>
                         </Card>
                     ))}
