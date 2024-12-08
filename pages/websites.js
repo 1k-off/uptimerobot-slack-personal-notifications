@@ -14,6 +14,8 @@ import { useTheme } from 'next-themes';
 import { Spinner } from '@/components/ui/spinner';
 import { Palette, User, Hash } from "lucide-react";
 import { useRouter } from 'next/router';
+import { useSession, signOut } from 'next-auth/react';
+
 
 const Websites = () => {
   const [websites, setWebsites] = useState([]);
@@ -23,7 +25,12 @@ const Websites = () => {
   const [error, setError] = useState(null);
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const { data: session, status } = useSession();
 
+  const createAlertText = process.env.NEXT_PUBLIC_REQUEST_CREATE_ALERT_TEXT || 'Default create alert message.';
+  const deleteAlertText = process.env.NEXT_PUBLIC_REQUEST_DELETE_ALERT_TEXT || 'Default delete alert message.';
+
+  
   useEffect(() => {
     const fetchWebsites = async () => {
       try {
@@ -80,6 +87,14 @@ const Websites = () => {
     });
   };
 
+  const handleRequestCreate = () => {
+    alert(createAlertText);
+  };
+
+  const handleRequestDelete = () => {
+    alert(deleteAlertText);
+  };
+
   // Helper functions to get user/channel names
   const getUserNameById = (id) => {
     const user = userOptions.find((u) => u.id === id);
@@ -116,9 +131,12 @@ const Websites = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-4xl font-bold">Websites List</h1>
           <div className="flex gap-2">
-            <Button>Request create</Button>
+            <Button onClick={handleRequestCreate}>Request create</Button>
             <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
               <Palette />
+            </Button>
+            <Button onClick={() => signOut()}>
+              Sign Out
             </Button>
           </div>
         </div>
@@ -177,7 +195,7 @@ const Websites = () => {
                 <Button variant="secondary" onClick={() => handleEditContacts(website)}>
                   Edit Contacts
                 </Button>
-                <Button variant="destructive">Request delete</Button>
+                <Button variant="destructive" onClick={handleRequestDelete}>Request delete</Button>
               </CardFooter>
             </Card>
           ))}
