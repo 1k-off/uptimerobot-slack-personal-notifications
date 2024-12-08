@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         .map(name => name.toLowerCase());
 
     // Retrieve cache time from environment variables (in seconds)
-    const cacheTimeEnv = process.env.SLACK_DATA_CACHE_TIME || '1800'; // Default to 1800 seconds (3 minutes)
+    const cacheTimeEnv = process.env.SLACK_DATA_CACHE_TIME || '1800'; // Default to 1800 seconds (30 minutes)
     const cacheTime = parseInt(cacheTimeEnv, 10); // Convert to integer
 
     // Check if cacheTime is a valid number
@@ -51,7 +51,14 @@ export default async function handler(req, res) {
 
     try {
         do {
-            const response = await fetch(`https://slack.com/api/conversations.list?types=public_channel,private_channel&cursor=${cursor || ''}`, {
+            const url = new URL('https://slack.com/api/conversations.list');
+            url.searchParams.append('types', 'public_channel,private_channel');
+            url.searchParams.append('limit', '1000'); // Adjust limit if necessary
+            if (cursor) {
+                url.searchParams.append('cursor', cursor);
+            }
+
+            const response = await fetch(url.toString(), {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -62,7 +69,10 @@ export default async function handler(req, res) {
             const data = await response.json();
 
             if (!data.ok) {
-                console.error('Error fetching channels:', data.error);
+                // Log the error details
+                console.error('Error fetching channels from Slack API:', data.error);
+                console.error('Response data:', JSON.stringify(data, null, 2));
+                // Return the error response
                 return res.status(500).json({ error: data.error });
             }
 
@@ -84,7 +94,7 @@ export default async function handler(req, res) {
 
         res.status(200).json(channels);
     } catch (error) {
-        console.error('Error in handler:', error);
+        console.error('Unexpected error in Slack Channels handler:', error);
         res.status(500).json({ error: 'Failed to fetch channels' });
     }
 }

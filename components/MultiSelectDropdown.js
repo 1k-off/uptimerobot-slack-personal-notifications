@@ -18,8 +18,9 @@ export default function MultiSelectDropdown({
   selectedPlaceholder,
   labelKey = "name",
   idKey = "id",
+  selectedItems,
+  setSelectedItems,
 }) {
-  const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
@@ -50,11 +51,11 @@ export default function MultiSelectDropdown({
   }, [apiEndpoint]);
 
   const handleSelect = (item) => {
-    const itemLabel = item[labelKey];
+    const itemId = item[idKey];
     setSelectedItems((prev) =>
-      prev.includes(itemLabel)
-        ? prev.filter((i) => i !== itemLabel)
-        : [...prev, itemLabel]
+      prev.includes(itemId)
+        ? prev.filter((i) => i !== itemId)
+        : [...prev, itemId]
     );
   };
 
@@ -128,7 +129,7 @@ export default function MultiSelectDropdown({
           </div>
         ) : filteredItems.length > 0 ? (
           filteredItems.map((item) => {
-            const isChecked = selectedItems.includes(item[labelKey]);
+            const isChecked = selectedItems.includes(item[idKey]);
             return (
               <DropdownMenuCheckboxItem
                 key={item[idKey]}
