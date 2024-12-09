@@ -170,11 +170,10 @@ const EditWebsite = () => {
             />
           </div>
         </div>
-
+        <hr className="mb-4"/>
         {/* Users Section */}
         <div>
           <h2 className="text-xl font-semibold mb-2">Select Users</h2>
-          <hr className="mb-4"/>
           <MultiSelectDropdown
             apiEndpoint="/api/slackUsers"
             placeholder="Select users..."
@@ -200,7 +199,6 @@ const EditWebsite = () => {
         {/* Channels Section */}
         <div>
           <h2 className="text-xl font-semibold mb-2">Select Channels</h2>
-          <hr className="mb-4"/>
           <MultiSelectDropdown
             apiEndpoint="/api/slackChannels"
             placeholder="Select channels..."
@@ -222,7 +220,7 @@ const EditWebsite = () => {
             ))}
           </div>
         </div>
-
+        <hr className="mb-4"/>
         <Button onClick={handleSave}>Save</Button>
         {alertMessage && (
           <Alert variant={alertType}>

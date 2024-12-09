@@ -12,10 +12,10 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { Spinner } from '@/components/ui/spinner';
-import { Palette, User, Hash } from "lucide-react";
+import { Palette, User, Hash, ArrowUp } from "lucide-react";
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
-
+import AlertModal from '@/components/AlertModal';
 
 const Websites = () => {
   const [websites, setWebsites] = useState([]);
@@ -27,10 +27,12 @@ const Websites = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  const createAlertText = process.env.NEXT_PUBLIC_REQUEST_CREATE_ALERT_TEXT || 'Default create alert message.';
-  const deleteAlertText = process.env.NEXT_PUBLIC_REQUEST_DELETE_ALERT_TEXT || 'Default delete alert message.';
+  const alertText = process.env.NEXT_PUBLIC_REQUEST_ALERT_TEXT || 'Default alert message.';
+  const alertLink = process.env.NEXT_PUBLIC_REQUEST_ALERT_LINK || 'Default alert link.';
 
-  
+  const [modalContent, setModalContent] = useState(null);
+  const [actionType, setActionType] = useState(''); // 'add' or 'delete'
+
   useEffect(() => {
     const fetchWebsites = async () => {
       try {
@@ -76,7 +78,7 @@ const Websites = () => {
     fetchChannelOptions();
   }, []);
 
-  const handleEditContacts = (website) => {
+  const handleEdit = (website) => {
     router.push({
       pathname: '/editWebsite',
       query: {
@@ -87,12 +89,15 @@ const Websites = () => {
     });
   };
 
-  const handleRequestCreate = () => {
-    alert(createAlertText);
-  };
-
-  const handleRequestDelete = () => {
-    alert(deleteAlertText);
+  const handleRequest = (action, defaultUrl = '') => {
+    setActionType(action);
+    setModalContent(
+      <RequestForm 
+        action={action}
+        defaultUrl={defaultUrl}
+        onClose={() => setModalContent(null)}
+      />
+    );
   };
 
   // Helper functions to get user/channel names
@@ -104,6 +109,12 @@ const Websites = () => {
   const getChannelNameById = (id) => {
     const channel = channelOptions.find((c) => c.id === id);
     return channel ? channel.name : id;
+  };
+
+  const handleGoToTop = () => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   if (loading) {
@@ -131,7 +142,7 @@ const Websites = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-4xl font-bold">Websites List</h1>
           <div className="flex gap-2">
-            <Button onClick={handleRequestCreate}>Request create</Button>
+            <Button onClick={() => handleRequest('add')}>Request Create</Button>
             <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
               <Palette />
             </Button>
@@ -192,15 +203,137 @@ const Websites = () => {
                 )}
               </CardContent>
               <CardFooter className="flex justify-end">
-                <Button variant="secondary" onClick={() => handleEditContacts(website)}>
-                  Edit Contacts
+                <Button className="mr-2" variant="secondary" onClick={() => handleEdit(website)}>
+                  Edit
                 </Button>
-                <Button variant="destructive" onClick={handleRequestDelete}>Request delete</Button>
+                <Button variant="destructive" onClick={() => handleRequest('delete', website.url)}>Request Delete</Button>
               </CardFooter>
             </Card>
           ))}
         </div>
       </div>
+      <div className="fixed bottom-6 right-6">
+        <Button variant="outline" size="icon" onClick={handleGoToTop}>
+          <ArrowUp />
+        </Button>
+      </div>
+      {modalContent && (
+        <AlertModal onClose={() => setModalContent(null)}>
+          {modalContent}
+        </AlertModal>
+      )}
+    </div>
+  );
+};
+
+// RequestForm Component
+const RequestForm = ({ action, defaultUrl = '', onClose }) => {
+  const [url, setUrl] = useState(defaultUrl);
+  const [submitting, setSubmitting] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState(null);
+  const { data: session } = useSession(); // Get session to access user email
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!url) {
+      setSubmissionResult({ success: false, message: 'URL is required.' });
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmissionResult(null);
+
+    try {
+      // Fetch Slack user ID from API route
+      const userIdResponse = await fetch('/api/getSlackUserId', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: session.user.email }),
+      });
+
+      const userIdData = await userIdResponse.json();
+
+      if (!userIdResponse.ok) {
+        throw new Error(userIdData.error || 'Failed to fetch Slack user ID.');
+      }
+
+      const reporterId = userIdData.userId;
+
+      // Send payload to Slack workflow webhook via API route
+      const webhookResponse = await fetch('/api/sendSlackWebhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          url,
+          reporter: reporterId,
+        }),
+      });
+
+      const webhookData = await webhookResponse.json();
+
+      if (!webhookResponse.ok) {
+        throw new Error(webhookData.error || 'Failed to send webhook.');
+      }
+
+      setSubmissionResult({ success: true, message: 'Request sent successfully.' });
+      // Close the modal after successful submission (optional)
+      onClose();
+    } catch (error) {
+      console.error('Error:', error);
+      setSubmissionResult({ success: false, message: error.message || 'An error occurred.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4 capitalize">{action} Website</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label htmlFor="url" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Website URL
+          </label>
+          <input
+            type="url"
+            id="url"
+            name="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            required
+            placeholder="https://example.com"
+            readOnly={action === 'delete'} // Make read-only if action is 'delete'
+            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ${
+              action === 'delete'
+                ? 'bg-gray-100 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                : 'dark:bg-gray-700 dark:border-gray-600 dark:text-white'
+            }`}
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting} className="mr-2">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting ? 'Submitting...' : 'Submit'}
+          </Button>
+        </div>
+      </form>
+      {submissionResult && (
+        <div
+          className={`mt-4 p-4 rounded ${
+            submissionResult.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}
+        >
+          {submissionResult.message}
+        </div>
+      )}
     </div>
   );
 };
