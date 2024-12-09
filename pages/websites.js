@@ -27,9 +27,6 @@ const Websites = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  const alertText = process.env.NEXT_PUBLIC_REQUEST_ALERT_TEXT || 'Default alert message.';
-  const alertLink = process.env.NEXT_PUBLIC_REQUEST_ALERT_LINK || 'Default alert link.';
-
   const [modalContent, setModalContent] = useState(null);
   const [actionType, setActionType] = useState(''); // 'add' or 'delete'
 
