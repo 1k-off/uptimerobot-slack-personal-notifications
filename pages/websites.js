@@ -28,7 +28,6 @@ const Websites = () => {
   const { data: session, status } = useSession();
 
   const [modalContent, setModalContent] = useState(null);
-  const [actionType, setActionType] = useState(''); // 'add' or 'delete'
 
   useEffect(() => {
     const fetchWebsites = async () => {
@@ -86,12 +85,22 @@ const Websites = () => {
     });
   };
 
-  const handleRequest = (action, defaultUrl = '') => {
-    setActionType(action);
+  const handleCreateMonitor = () => {
     setModalContent(
-      <RequestForm 
-        action={action}
-        defaultUrl={defaultUrl}
+      <MonitorForm
+        action="newMonitor"
+        onClose={() => setModalContent(null)}
+      />
+    );
+  };
+
+  const handleDeleteMonitor = (website) => {
+    setModalContent(
+      <MonitorForm
+        action="deleteMonitor"
+        monitorId={website.id}
+        websiteUrl={website.url}
+        websiteName={website.friendly_name}
         onClose={() => setModalContent(null)}
       />
     );
@@ -137,9 +146,19 @@ const Websites = () => {
     <div className="min-h-screen p-6">
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-4xl font-bold">Websites List</h1>
+          <div>
+            <h1 className="text-4xl font-bold">Websites List</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {websites.length} / {process.env.NEXT_PUBLIC_UPTIMEROBOT_WEBSITES_ALL || '50'} websites
+            </p>
+          </div>
           <div className="flex gap-2">
-            <Button onClick={() => handleRequest('add')}>Request Create</Button>
+            <Button 
+              onClick={handleCreateMonitor}
+              disabled={websites.length >= (process.env.NEXT_PUBLIC_UPTIMEROBOT_WEBSITES_ALL || 50)}
+            >
+              Create
+            </Button>
             <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
               <Palette />
             </Button>
@@ -203,7 +222,9 @@ const Websites = () => {
                 <Button className="mr-2" variant="secondary" onClick={() => handleEdit(website)}>
                   Edit
                 </Button>
-                <Button variant="destructive" onClick={() => handleRequest('delete', website.url)}>Request Delete</Button>
+                <Button variant="destructive" onClick={() => handleDeleteMonitor(website)}>
+                  Delete
+                </Button>
               </CardFooter>
             </Card>
           ))}
@@ -223,67 +244,83 @@ const Websites = () => {
   );
 };
 
-// RequestForm Component
-const RequestForm = ({ action, defaultUrl = '', onClose }) => {
-  const [url, setUrl] = useState(defaultUrl);
+const MonitorForm = ({ action, onClose, monitorId, websiteUrl, websiteName }) => {
+  const [url, setUrl] = useState('');
+  const [keyword, setKeyword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState(null);
-  const { data: session } = useSession(); // Get session to access user email
+  const [result, setResult] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!url) {
-      setSubmissionResult({ success: false, message: 'URL is required.' });
-      return;
-    }
-
     setSubmitting(true);
-    setSubmissionResult(null);
+    setResult(null);
 
     try {
-      // Fetch Slack user ID from API route
-      const userIdResponse = await fetch('/api/getSlackUserId', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: session.user.email }),
-      });
+      let payload = {};
+      let endpoint = '/api/uptimeRobot';
 
-      const userIdData = await userIdResponse.json();
-
-      if (!userIdResponse.ok) {
-        throw new Error(userIdData.error || 'Failed to fetch Slack user ID.');
-      }
-
-      const reporterId = userIdData.userId;
-
-      // Send payload to Slack workflow webhook via API route
-      const webhookResponse = await fetch('/api/sendSlackWebhook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action,
+      if (action === 'newMonitor') {
+        if (!url || !keyword) {
+          setResult({ success: false, message: 'URL and keyword are required.' });
+          setSubmitting(false);
+          return;
+        }
+        payload = {
+          action: 'newMonitor',
           url,
-          reporter: reporterId,
-        }),
-      });
-
-      const webhookData = await webhookResponse.json();
-
-      if (!webhookResponse.ok) {
-        throw new Error(webhookData.error || 'Failed to send webhook.');
+          keyword_value: keyword,
+        };
+      } else if (action === 'deleteMonitor') {
+        if (!monitorId) {
+          setResult({ success: false, message: 'No monitor ID provided.' });
+          setSubmitting(false);
+          return;
+        }
+        payload = {
+          action: 'deleteMonitor',
+          id: monitorId,
+          url: websiteUrl,
+          friendly_name: websiteName,
+        };
       }
 
-      setSubmissionResult({ success: true, message: 'Request sent successfully.' });
-      // Close the modal after successful submission (optional)
-      onClose();
-    } catch (error) {
-      console.error('Error:', error);
-      setSubmissionResult({ success: false, message: error.message || 'An error occurred.' });
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        // If there's an error, parse and display it.
+        const responseData = await response.json();
+        
+        // In development, log it for debugging:
+        console.error('Response error data:', responseData);
+
+        let errorMessage = 'Request failed.';
+        if (responseData.error) {
+          // If error is an object, convert to string
+          if (typeof responseData.error === 'string') {
+            errorMessage = responseData.error;
+          } else {
+            if (typeof responseData.error.message === 'string') {
+              errorMessage = responseData.error.message;
+            } else {
+              errorMessage = JSON.stringify(responseData.error, null, 2);
+            }
+          }
+        } else if (typeof responseData === 'object') {
+          errorMessage = JSON.stringify(responseData, null, 2);
+        }
+
+        // Throw an Error to be caught below
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      setResult({ success: true, message: data.message || 'Success!' });
+    } catch (err) {
+      setResult({ success: false, message: err.message });
     } finally {
       setSubmitting(false);
     }
@@ -291,44 +328,84 @@ const RequestForm = ({ action, defaultUrl = '', onClose }) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4 capitalize">{action} Website</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label htmlFor="url" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Website URL
+      <h2 className="text-2xl font-bold mb-4 capitalize">
+        {action === 'newMonitor' ? 'Create Monitor' : 'Delete Monitor'}
+      </h2>
+      {action === 'newMonitor' && (
+        <form onSubmit={handleSubmit}>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="url">
+            URL
           </label>
           <input
-            type="url"
             id="url"
             name="url"
+            type="url"
+            required
+            className="mb-4 w-full rounded border p-2"
+            placeholder="https://example.com"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            required
-            placeholder="https://example.com"
-            readOnly={action === 'delete'} // Make read-only if action is 'delete'
-            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ${
-              action === 'delete'
-                ? 'bg-gray-100 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-                : 'dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-            }`}
           />
-        </div>
-        <div className="flex justify-end">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting} className="mr-2">
-            Cancel
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? 'Submitting...' : 'Submit'}
-          </Button>
-        </div>
-      </form>
-      {submissionResult && (
+          <label className="block mb-2 font-semibold" htmlFor="keyword">
+            Keyword
+          </label>
+          <input
+            id="keyword"
+            name="keyword"
+            type="text"
+            required
+            className="mb-4 w-full rounded border p-2"
+            placeholder="Text to monitor on the page"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
+
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              disabled={submitting}
+              className="mr-2"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Creating...' : 'Create'}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {action === 'deleteMonitor' && (
+        <form onSubmit={handleSubmit}>
+          <p className="mb-4 text-red-500">
+            Are you sure you want to delete monitor ID {monitorId}?
+          </p>
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              disabled={submitting}
+              className="mr-2"
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" type="submit" disabled={submitting}>
+              {submitting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {result && (
         <div
-          className={`mt-4 p-4 rounded ${
-            submissionResult.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          className={`mt-4 p-3 rounded ${
+            result.success
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
           }`}
         >
-          {submissionResult.message}
+          {result.message}
         </div>
       )}
     </div>

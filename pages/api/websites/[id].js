@@ -1,4 +1,4 @@
-import clientPromise from '../../../lib/mongodb';
+import { connectToDatabase } from '@/lib/mongodb';
 
 export default async function handler(req, res) {
   const { id } = req.query;
@@ -11,8 +11,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const client = await clientPromise;
-    const db = client.db();
+    const { db } = await connectToDatabase();
 
     switch (method) {
       case 'GET':

@@ -1,4 +1,4 @@
-import { connectToDatabase } from '../../lib/dbConnect';
+import { connectToDatabase } from '@/lib/mongodb';
 import { WebClient } from '@slack/web-api';
 
 export default async function handler(req, res) {

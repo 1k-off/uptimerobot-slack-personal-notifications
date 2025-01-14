@@ -1,4 +1,4 @@
-import clientPromise from '../../lib/mongodb';
+import { connectToDatabase } from '../../lib/mongodb';
 import { fetchMonitors } from '../../lib/uptimeRobot';
 
 export default async function handler(req, res) {
@@ -16,9 +16,7 @@ export default async function handler(req, res) {
     // Convert monitor IDs to integers
     const websiteIds = monitors.map((m) => parseInt(m.id));
 
-    // Connect to MongoDB
-    const client = await clientPromise;
-    const db = client.db();
+    const { db } = await connectToDatabase();
 
     // Fetch website data from MongoDB
     const dbWebsites = await db
