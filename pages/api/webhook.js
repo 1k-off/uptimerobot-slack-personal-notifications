@@ -68,13 +68,52 @@ export default async function handler(req, res) {
     // If the website has a group, use a thread for updates
     if (website.group) {
       const groupId = website.group._id.toString();
-      // Retrieve the thread timestamp from cache
-      let thread_ts = getCachedData(groupId);
+      const normAlert = alertTypeFriendlyName.toLowerCase();
 
-      const groupMessage = `Website *${website.friendly_name}* from group *${website.group.name}* is now *${alertTypeFriendlyName}*`;
-      const aggregatedMessage = `*${monitorFriendlyName}* (${monitorURL}) is now *${alertTypeFriendlyName}*`;
+      // Determine cache keys based on event type
+      let threadKey, aggKey;
+      if (normAlert === 'down') {
+        threadKey = `${groupId}_down_thread`;
+        aggKey = `${groupId}_down_aggregated`;
+        // Clear any cached "up" thread since a new down event should start a new thread
+        setCachedData(`${groupId}_up_thread`, null, 0);
+        setCachedData(`${groupId}_up_aggregated`, null, 0);
+      } else if (normAlert === 'up') {
+        threadKey = `${groupId}_up_thread`;
+        aggKey = `${groupId}_up_aggregated`;
+        // Clear any cached "down" thread if an up event occurs after a down event
+        setCachedData(`${groupId}_down_thread`, null, 0);
+        setCachedData(`${groupId}_down_aggregated`, null, 0);
+      } else {
+        // Fallback for any other event types
+        threadKey = `${groupId}_generic_thread`;
+        aggKey = `${groupId}_generic_aggregated`;
+      }
 
-      // For each Slack channel, decide whether to update an existing thread or create a new one
+      const groupMessage = `Website *${website.friendlyName}* from group *${website.group.name}* is now *${alertTypeFriendlyName}*`;
+      let thread_ts = getCachedData(threadKey);
+      let aggregatedList = getCachedData(aggKey) || [];
+
+      // Add current alert to the aggregated list if not already present
+      if (!aggregatedList.find(item => item.monitorID === monitorID)) {
+        aggregatedList.push({
+          monitorID,
+          monitorFriendlyName,
+          monitorURL,
+          alertTypeFriendlyName,
+        });
+      }
+      setCachedData(aggKey, aggregatedList, CACHE_TTL_SECONDS);
+
+      // Build an aggregated message for all alerts in the group of this event type
+      const aggregatedMessage = aggregatedList
+          .map(
+              item =>
+                  `• *${item.monitorFriendlyName}* (<${item.monitorURL}|${item.monitorURL}>) is now *${item.alertTypeFriendlyName}*`
+          )
+          .join('\n');
+
+      // For each Slack channel, update an existing thread or start a new one
       for (const channelId of slackChannels) {
         if (thread_ts) {
           // Update the main thread message
@@ -83,20 +122,21 @@ export default async function handler(req, res) {
             ts: thread_ts,
             text: aggregatedMessage,
           });
-          // Then, post the new alert in the existing thread
+          // Post the new alert as a reply in the existing thread
           await slackClient.chat.postMessage({
             channel: channelId,
             thread_ts,
             text: groupMessage,
           });
         } else {
-          // No existing thread: post a new main message and store its thread_ts in cache
+          // No existing thread: create a new main message and store its thread timestamp
           const result = await slackClient.chat.postMessage({
             channel: channelId,
             text: aggregatedMessage,
           });
           thread_ts = result.ts;
-          setCachedData(groupId, thread_ts, CACHE_TTL_SECONDS);
+          setCachedData(threadKey, thread_ts, CACHE_TTL_SECONDS);
+          // Post the current alert as a reply in the new thread
           await slackClient.chat.postMessage({
             channel: channelId,
             thread_ts,
@@ -105,7 +145,7 @@ export default async function handler(req, res) {
         }
       }
 
-      // For direct Slack user messages, send the group message without threading
+      // Send a separate notification to each Slack user
       for (const userId of slackUsers) {
         try {
           await slackClient.chat.postMessage({
@@ -117,7 +157,13 @@ export default async function handler(req, res) {
         }
       }
     } else {
-      // No group defined – send notifications as before
+      // For websites without a group, send the standard message separately
+      for (const channelId of slackChannels) {
+        await slackClient.chat.postMessage({
+          channel: channelId,
+          text: standardMessage,
+        });
+      }
       for (const userId of slackUsers) {
         try {
           await slackClient.chat.postMessage({
@@ -128,23 +174,12 @@ export default async function handler(req, res) {
           console.error(`Failed to send message to Slack user ${userId}:`, error);
         }
       }
-
-      for (const channelId of slackChannels) {
-        try {
-          await slackClient.chat.postMessage({
-            channel: channelId,
-            text: standardMessage,
-          });
-        } catch (error) {
-          console.error(`Failed to send message to Slack channel ${channelId}:`, error);
-        }
-      }
     }
 
     res.status(200).json({ message: 'Notifications sent successfully.' });
   } catch (error) {
-    console.error('Error handling webhook:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error sending notifications:', error);
+    res.status(500).json({ message: 'Internal server error.' });
   }
 }
 
