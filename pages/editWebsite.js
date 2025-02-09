@@ -9,10 +9,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Card,
   CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription
+  CardTitle
 } from '@/components/ui/card';
+import GroupAutocomplete from '@/components/GroupAutocomplete';
+
 import { User, Hash } from 'lucide-react'; // Icons for user and channel
 
 const EditWebsite = () => {
@@ -28,6 +28,7 @@ const EditWebsite = () => {
   const [loading, setLoading] = useState(true);
   const [alertMessage, setAlertMessage] = useState(null); // Added state for alert message
   const [alertType, setAlertType] = useState(null); // Added state for alert type
+  const [selectedGroup, setSelectedGroup] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -42,6 +43,7 @@ const EditWebsite = () => {
           setUrl(data.url || queryUrl || '');
           setSelectedUsers(data.alertContacts?.slack?.users || []);
           setSelectedChannels(data.alertContacts?.slack?.channels || []);
+          if (data.group) setSelectedGroup(data.group);
         } else {
           // Website data not found, initialize with query parameters
           setWebsite({ id: parseInt(id) });
@@ -96,21 +98,29 @@ const EditWebsite = () => {
       },
     };
 
+    const updateData = {
+      friendlyName,
+      url,
+      alertContacts,
+      group: selectedGroup ? { _id: selectedGroup._id, name: selectedGroup.name } : null,
+    };
+
+
     try {
       const response = await fetch(`/api/websites/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ alertContacts, friendlyName, url }),
+        body: JSON.stringify(updateData),
       });
 
       if (response.ok) {
-        setAlertMessage('Website updated successfully'); // Set alert message on success
-        setAlertType('success'); // Set alert type on success
+        setAlertMessage('Website updated successfully');
+        setAlertType('success');
         setTimeout(() => {
           router.push('/websites');
-        }, 2000); // Redirect after 2 seconds
+        }, 2000);
       } else {
         const data = await response.json();
         setAlertMessage(`Error updating website: ${data.error}`); // Set alert message on error
@@ -219,6 +229,14 @@ const EditWebsite = () => {
               </Card>
             ))}
           </div>
+        </div>
+        {/* Group section */}
+        <div>
+          <GroupAutocomplete
+              value={selectedGroup}
+              onChange={setSelectedGroup}
+              websiteId={website.id}
+          />
         </div>
         <hr className="mb-4"/>
         <Button onClick={handleSave}>Save</Button>
