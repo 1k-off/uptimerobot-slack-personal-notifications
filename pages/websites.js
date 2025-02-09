@@ -181,6 +181,13 @@ const Websites = () => {
                   >
                     {website.url}
                   </Link>
+                  {website.group && (
+                      <div className="mt-2">
+                          <span className="text-sm">
+                            Group: {website.group.name}
+                          </span>
+                      </div>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -318,6 +325,7 @@ const MonitorForm = ({ action, onClose, monitorId, websiteUrl, websiteName }) =>
       }
 
       const data = await response.json();
+
       setResult({ success: true, message: data.message || 'Success!' });
     } catch (err) {
       setResult({ success: false, message: err.message });

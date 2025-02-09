@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { getCachedData, setCachedData } from '../../lib/cache';
+import { getCachedData, setCachedData } from '@/lib/cache';
 
 export default async function handler(req, res) {
     const token = process.env.SLACK_BOT_TOKEN;
@@ -7,15 +7,14 @@ export default async function handler(req, res) {
     let cursor;
 
     // Retrieve cache time from environment variables (in seconds)
-    const cacheTimeEnv = process.env.SLACK_DATA_CACHE_TIME || '1800'; // Default to 1800 seconds (30 minutes)
-    const cacheTime = parseInt(cacheTimeEnv, 10); // Convert to integer
+    const cacheTimeStr = process.env.SLACK_DATA_CACHE_TIME || '1800'; // Default to 1800 seconds (30 minutes)
+    const cacheTimeNum = parseInt(cacheTimeStr, 10); // Convert to integer
 
     // Check if cacheTime is a valid number
-    if (isNaN(cacheTime) || cacheTime <= 0) {
-        console.warn(`Invalid SLACK_DATA_CACHE_TIME value: ${cacheTimeEnv}. Falling back to default of 1800 seconds.`);
+    if (isNaN(cacheTimeNum) || cacheTimeNum <= 0) {
+        console.warn(`Invalid SLACK_DATA_CACHE_TIME value: ${cacheTimeStr}. Falling back to default of 1800 seconds.`);
     }
-
-    const effectiveCacheTime = (!isNaN(cacheTime) && cacheTime > 0) ? cacheTime : 1800; // Default to 1800 seconds if invalid
+    const cacheTime = (!isNaN(cacheTimeNum) && cacheTimeNum > 0) ? cacheTimeNum : 1800; // Default to 1800 seconds if invalid
 
     // Check for cached users
     const cachedData = getCachedData('users');
@@ -24,7 +23,7 @@ export default async function handler(req, res) {
         const currentTime = Date.now();
         const elapsedSeconds = (currentTime - timestamp) / 1000; // Convert to seconds
 
-        if (elapsedSeconds < effectiveCacheTime) {
+        if (elapsedSeconds < cacheTime) {
             // Cache is still valid
             return res.status(200).json(cachedUsers);
         } else {
@@ -71,7 +70,7 @@ export default async function handler(req, res) {
         }));
 
         // Cache the users with the current timestamp
-        setCachedData('users', { users, timestamp: Date.now() });
+        setCachedData('users', { users, timestamp: Date.now() }, cacheTime);
 
         res.status(200).json(users);
     } catch (error) {

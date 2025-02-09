@@ -29,27 +29,36 @@ export default async function handler(req, res) {
         break;
       case 'PUT':
         try {
-          const { alertContacts, friendlyName, url } = req.body;
+          const { alertContacts, friendlyName, url, group } = req.body;
 
           const updateFields = {
             alertContacts,
             updatedAt: new Date(),
           };
 
-          // Include friendlyName and url if provided
           if (friendlyName) updateFields.friendlyName = friendlyName;
           if (url) updateFields.url = url;
 
-          const updateResult = await db.collection('websites').updateOne(
-            { id: websiteId },
-            {
-              $set: updateFields,
-              $setOnInsert: {
-                id: websiteId,
-                createdAt: new Date(),
-              },
+          // Build the update query with $set and $setOnInsert
+          const updateQuery = {
+            $set: updateFields,
+            $setOnInsert: {
+              id: websiteId,
+              createdAt: new Date(),
             },
-            { upsert: true }
+          };
+
+          // For the group field, either update it if provided, or unset it if falsy
+          if (group) {
+            updateQuery.$set.group = group;
+          } else {
+            updateQuery.$unset = { group: "" };
+          }
+
+          await db.collection('websites').updateOne(
+              { id: websiteId },
+              updateQuery,
+              { upsert: true }
           );
 
           res.status(200).json({ message: 'Website updated successfully' });

@@ -1,5 +1,5 @@
-import { connectToDatabase } from '../../lib/mongodb';
-import { fetchMonitors } from '../../lib/uptimeRobot';
+import { connectToDatabase } from '@/lib/mongodb';
+import { fetchMonitors } from '@/lib/uptimeRobot';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -12,10 +12,7 @@ export default async function handler(req, res) {
   try {
     // Fetch monitors from UptimeRobot
     const monitors = await fetchMonitors();
-
-    // Convert monitor IDs to integers
     const websiteIds = monitors.map((m) => parseInt(m.id));
-
     const { db } = await connectToDatabase();
 
     // Fetch website data from MongoDB
@@ -37,6 +34,7 @@ export default async function handler(req, res) {
         friendly_name: dbData.friendlyName || monitor.friendly_name,
         url: dbData.url || monitor.url,
         alertContacts: dbData.alertContacts || null,
+        group: dbData.group || null,
       };
     });
 

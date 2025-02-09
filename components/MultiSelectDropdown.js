@@ -92,7 +92,7 @@ export default function MultiSelectDropdown({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="min-w-[200px] justify-between">
+        <Button variant="outline" className="min-w-[400px] justify-between">
           <span className="truncate">{displayValue}</span>
           <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
         </Button>
