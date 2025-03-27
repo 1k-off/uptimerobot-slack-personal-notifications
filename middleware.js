@@ -24,6 +24,26 @@ export async function middleware(req) {
     return NextResponse.redirect(new URL('/', req.url));
   }
 
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    // Admin page - check for admin privileges
+    const adminEmails = process.env.ADMIN_EMAILS ?
+        process.env.ADMIN_EMAILS.split(',') : [];
+    const adminGroups = process.env.ADMIN_GROUPS ?
+        process.env.ADMIN_GROUPS.split(',') : [];
+
+    const isAdmin =
+        adminEmails.includes(token.email) ||
+        (token.groups && token.groups.some(group => adminGroups.includes(group))) ||
+        (token.roles && token.roles.includes('Admin'));
+
+    if (!isAdmin) {
+      // User is not an admin, redirect to unauthorized page
+      return NextResponse.redirect(new URL('/unauthorized', req.url));
+    }
+  }
+
+
+
   // If token exists, proceed
   return NextResponse.next();
 }

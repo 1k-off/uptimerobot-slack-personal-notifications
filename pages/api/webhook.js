@@ -127,12 +127,16 @@ export default async function handler(req, res) {
             channel: channelId,
             thread_ts,
             text: groupMessage,
+            unfurl_links: false,
+            unfurl_media: false
           });
         } else {
           // No existing thread: create a new main message and store its thread timestamp
           const result = await slackClient.chat.postMessage({
             channel: channelId,
             text: aggregatedMessage,
+            unfurl_links: false,
+            unfurl_media: false
           });
           thread_ts = result.ts;
           setCachedData(threadKey, thread_ts, CACHE_TTL_SECONDS);
@@ -141,6 +145,8 @@ export default async function handler(req, res) {
             channel: channelId,
             thread_ts,
             text: groupMessage,
+            unfurl_links: false,
+            unfurl_media: false
           });
         }
       }
@@ -151,6 +157,8 @@ export default async function handler(req, res) {
           await slackClient.chat.postMessage({
             channel: userId,
             text: groupMessage,
+            unfurl_links: false,
+            unfurl_media: false
           });
         } catch (error) {
           console.error(`Failed to send message to Slack user ${userId}:`, error);
@@ -162,6 +170,8 @@ export default async function handler(req, res) {
         await slackClient.chat.postMessage({
           channel: channelId,
           text: standardMessage,
+          unfurl_links: false,
+          unfurl_media: false
         });
       }
       for (const userId of slackUsers) {
@@ -169,6 +179,8 @@ export default async function handler(req, res) {
           await slackClient.chat.postMessage({
             channel: userId,
             text: standardMessage,
+            unfurl_links: false,
+            unfurl_media: false
           });
         } catch (error) {
           console.error(`Failed to send message to Slack user ${userId}:`, error);

@@ -29,46 +29,46 @@ const Websites = () => {
 
   const [modalContent, setModalContent] = useState(null);
 
-  useEffect(() => {
-    const fetchWebsites = async () => {
-      try {
-        const response = await fetch('/api/websites');
-        if (!response.ok) {
-          throw new Error('Failed to fetch websites');
-        }
+  const fetchWebsites = async () => {
+    try {
+      const response = await fetch('/api/websites');
+      if (!response.ok) {
+        throw new Error('Failed to fetch websites');
+      }
+      const data = await response.json();
+      setWebsites(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUserOptions = async () => {
+    try {
+      const response = await fetch('/api/slackUsers');
+      if (response.ok) {
         const data = await response.json();
-        setWebsites(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        setUserOptions(data);
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch user options:', error);
+    }
+  };
 
-    const fetchUserOptions = async () => {
-      try {
-        const response = await fetch('/api/slackUsers');
-        if (response.ok) {
-          const data = await response.json();
-          setUserOptions(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user options:', error);
+  const fetchChannelOptions = async () => {
+    try {
+      const response = await fetch('/api/slackChannels');
+      if (response.ok) {
+        const data = await response.json();
+        setChannelOptions(data);
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch channel options:', error);
+    }
+  };
 
-    const fetchChannelOptions = async () => {
-      try {
-        const response = await fetch('/api/slackChannels');
-        if (response.ok) {
-          const data = await response.json();
-          setChannelOptions(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch channel options:', error);
-      }
-    };
-
+  useEffect(() => {
     fetchWebsites();
     fetchUserOptions();
     fetchChannelOptions();
