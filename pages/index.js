@@ -24,7 +24,7 @@ const HomePage = () => {
   }
 
   return (
-    <main className="flex h-screen items-center justify-center bg-black text-white">
+    <main className="flex h-screen items-center justify-center bg-white dark:bg-black text-gray-900 dark:text-white">
       <div className="text-center">
       <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl">UCC Dashboard</h1>
         <Card

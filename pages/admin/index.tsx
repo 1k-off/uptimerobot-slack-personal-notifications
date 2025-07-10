@@ -1,10 +1,9 @@
-// pages/admin.js
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from 'sonner';
 import MultiSelectDropdown from '@/components/MultiSelectDropdown';
 import {
     Card,
@@ -13,23 +12,24 @@ import {
     CardTitle,
     CardDescription
 } from '@/components/ui/card';
+import { Session } from '@/types';
 
 export default function AdminPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState(null);
-    const { toast } = useToast();
+    const [result, setResult] = useState<any>(null);
 
     // State for storing selected user and channel IDs
-    const [selectedUsers, setSelectedUsers] = useState([]);
-    const [selectedChannels, setSelectedChannels] = useState([]);
+    const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+    const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
 
     if (status === "loading") {
         return <div className="flex justify-center items-center h-screen">Loading...</div>;
     }
 
-    if (!session || !session.user.isAdmin) {
+    const typedSession = session as Session | null;
+    if (!typedSession || !typedSession.user.isAdmin) {
         router.push('/unauthorized');
         return null;
     }
@@ -37,11 +37,7 @@ export default function AdminPage() {
     const handleTestSlackMessage = async () => {
         // Validate if at least one recipient is selected
         if (selectedUsers.length === 0 && selectedChannels.length === 0) {
-            toast({
-                title: "Warning",
-                description: "Please select at least one user or channel to send the message to",
-                duration: 5000,
-            });
+            toast.warning("Please select at least one user or channel to send the message to");
             return;
         }
 
@@ -61,28 +57,14 @@ export default function AdminPage() {
             const data = await response.json();
 
             if (response.ok) {
-                toast({
-                    title: "Success",
-                    description: "Test Slack message sent successfully!",
-                    duration: 5000,
-                });
+                toast.success("Test Slack message sent successfully!");
                 setResult(data);
             } else {
-                toast({
-                    title: "Error",
-                    description: data.error || "Failed to send test Slack message",
-                    variant: "destructive",
-                    duration: 5000,
-                });
+                toast.error(data.error || "Failed to send test Slack message");
                 setResult(data);
             }
         } catch (error) {
-            toast({
-                title: "Error",
-                description: "An unexpected error occurred",
-                variant: "destructive",
-                duration: 5000,
-            });
+            toast.error("An unexpected error occurred");
             console.error("Error sending test Slack message:", error);
         } finally {
             setLoading(false);
@@ -91,7 +73,17 @@ export default function AdminPage() {
 
     return (
         <div className="container py-8">
-            <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+                <div className="space-x-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => router.push('/admin/messages')}
+                    >
+                        View Messages
+                    </Button>
+                </div>
+            </div>
 
             <Card className="mb-8">
                 <CardHeader>
@@ -157,4 +149,4 @@ export default function AdminPage() {
             </Card>
         </div>
     );
-}
+} 

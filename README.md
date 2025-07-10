@@ -26,9 +26,13 @@ An in‑memory cache is used to store Slack thread details and reduce the number
 - **Threaded Notifications for Groups:**  
   When websites belong to a group, alerts are posted into Slack threads for clear and organized updates.
 
+- **Message Cleanup:**  
+  Automatic cleanup of old Slack messages to keep channels clean. Configurable retention period and on/off toggle.
+
 ## Technologies
 
 - **Next.js:** UI and API routes running on Vercel.
+- **TypeScript:** Type-safe development (supports both JS and TS).
 - **Azure Entra:** Secure user authorization via Azure App registration.
 - **Slack:** Notifications.
 - **MongoDB/Atlas:** Storage for website subscription details.
@@ -46,7 +50,7 @@ An in‑memory cache is used to store Slack thread details and reduce the number
 2. **Install Dependencies:**
 
    ```bash
-   yarn install
+   pnpm install
    ```
 
 3. **Configure Environment Variables:**
@@ -68,6 +72,10 @@ An in‑memory cache is used to store Slack thread details and reduce the number
     UPTIMEROBOT_ALERT_CONTACT_NAMES=...
     NEXT_PUBLIC_UPTIMEROBOT_WEBSITES_ALL=50 # number of websites uptimerobot can handle (price plan)
     SLACK_CHANNEL_ACTION_NOTIFY=monitoring-admin # channel for notifications about creation or deletion websites from dashboard
+    
+    # Message cleanup settings (optional)
+    SLACK_PRUNE_OLD_MESSAGES=false # set to true to enable automatic message cleanup
+    SLACK_KEEP_MESSAGES_SECONDS=120 # how long to keep messages before cleanup (in seconds)
    ```
 
 ## Usage
@@ -77,12 +85,29 @@ An in‑memory cache is used to store Slack thread details and reduce the number
 Start the project locally with:
 
 ```bash
-yarn dev
+pnpm dev
 ```
 
 The service (and its API routes) will run on your local development server. 
 Make sure your UptimeRobot webhook is configured to point to your API endpoint and includes the token as a query parameter 
 for authorization.
+
+### Message Cleanup
+
+The service includes automatic message cleanup functionality to keep Slack channels clean:
+
+- **Automatic Cleanup:** When `SLACK_PRUNE_OLD_MESSAGES=true`, the service automatically deletes old messages based on `SLACK_KEEP_MESSAGES_SECONDS`
+- **Manual Cleanup:** Use the admin interface at `/admin/messages` to view and manually trigger cleanup
+- **API Access:** Use the `/api/cleanup-messages` endpoint (requires admin session) for programmatic cleanup
+
+### Admin Interface
+
+Access the admin dashboard at `/admin` for:
+- Slack integration testing
+- Message management at `/admin/messages`
+- View all tracked Slack messages
+- Manually trigger cleanup
+- Monitor message activity
 
 ## Deployment
 

@@ -1,7 +1,8 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { AlertModalProps } from '@/types';
 
-const AlertModal = ({ children, onClose }) => {
+const AlertModal: React.FC<AlertModalProps> = ({ children, onClose }) => {
   return (
     <div 
       className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
@@ -23,4 +24,4 @@ const AlertModal = ({ children, onClose }) => {
   );
 };
 
-export default AlertModal;
+export default AlertModal; 
