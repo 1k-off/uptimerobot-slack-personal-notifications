@@ -18,7 +18,7 @@ export default function AdminPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<object | null>(null);
 
     // State for storing selected user and channel IDs
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);

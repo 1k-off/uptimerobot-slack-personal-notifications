@@ -1,6 +1,5 @@
 import { WebClient } from '@slack/web-api';
 import { connectToDatabase } from './mongodb';
-import Message, { IMessage } from '@/models/Message';
 import { MessageRecord } from '@/types';
 
 /**

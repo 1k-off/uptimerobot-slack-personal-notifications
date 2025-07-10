@@ -119,7 +119,7 @@ export default async function handler(
 
       const groupMessage = `Website *${website.friendlyName}* from group *${website.group.name}* is now *${alertTypeFriendlyName}*`;
       let thread_ts = getCachedData<string>(threadKey) || undefined;
-      let aggregatedList = getCachedData<AggregatedAlert[]>(aggKey) || [];
+      const aggregatedList = getCachedData<AggregatedAlert[]>(aggKey) || [];
 
       // Add current alert to the aggregated list if not already present
       if (!aggregatedList.find(item => item.monitorID === monitorID)) {

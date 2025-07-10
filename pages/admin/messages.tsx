@@ -23,7 +23,7 @@ export default function AdminMessages() {
     }
 
     fetchMessages();
-  }, [session, status]);
+  }, [session, status, router]);
 
   const fetchMessages = async () => {
     try {

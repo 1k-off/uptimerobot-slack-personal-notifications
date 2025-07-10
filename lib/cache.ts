@@ -7,7 +7,7 @@ const cache = new NodeCache();
  * @param key - The cache key.
  * @returns The cached data or null if not found.
  */
-export function getCachedData<T = any>(key: string): T | null {
+export function getCachedData<T = unknown>(key: string): T | null {
     return cache.get(key) || null;
 }
 
@@ -17,7 +17,7 @@ export function getCachedData<T = any>(key: string): T | null {
  * @param data - The data to cache.
  * @param ttl - Time to live in seconds.
  */
-export function setCachedData<T = any>(key: string, data: T, ttl: number): void {
+export function setCachedData<T = unknown>(key: string, data: T, ttl: number): void {
     cache.set(key, data, ttl);
 }
 

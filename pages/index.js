@@ -1,12 +1,9 @@
 import React from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import Websites from './websites'; 
-import { Label } from "@/components/ui/label"
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
