@@ -1,20 +1,41 @@
+import { NextApiRequest, NextApiResponse } from 'next';
 import { connectToDatabase } from '@/lib/mongodb';
 import { WebClient } from '@slack/web-api';
 import { getCachedData, setCachedData } from '@/lib/cache';
+import { WebhookData, SlackMessageData, Website } from '@/types';
+import { saveMessageRecord, updateMessageRecord } from '@/lib/slack-cleanup';
+import '@/lib/init';
 
 const CACHE_TTL_SECONDS = 3600;
 
-export default async function handler(req, res) {
+interface AggregatedAlert {
+  monitorID: string;
+  monitorFriendlyName: string;
+  monitorURL: string;
+  alertTypeFriendlyName: string;
+}
+
+interface ApiResponse {
+  message?: string;
+  error?: string;
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<ApiResponse>
+): Promise<void> {
   // Verify secret token
   const secretToken = process.env.WEBHOOK_SECRET_TOKEN;
-  const providedToken = req.query.token;
+  const providedToken = req.query.token as string;
 
   if (!providedToken || providedToken !== secretToken) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    res.status(405).json({ message: 'Method not allowed' });
+    return;
   }
 
   try {
@@ -30,26 +51,32 @@ export default async function handler(req, res) {
       alertDateTime,
       sslExpiryDate,
       sslExpiryDaysLeft,
-    } = req.body;
+    }: WebhookData = req.body;
 
     // Connect to the database and retrieve the website
     const { db } = await connectToDatabase();
     const websitesCollection = db.collection('websites');
-    const website = await websitesCollection.findOne({ id: parseInt(monitorID) });
+    const website = await websitesCollection.findOne({ id: parseInt(monitorID) }) as Website | null;
 
     if (!website || !website.alertContacts) {
-      return res.status(200).json({ message: 'No alert contacts defined.' });
+      res.status(200).json({ message: 'No alert contacts defined.' });
+      return;
     }
 
     const slackUsers = website.alertContacts.slack.users || [];
     const slackChannels = website.alertContacts.slack.channels || [];
 
     if (slackUsers.length === 0 && slackChannels.length === 0) {
-      return res.status(200).json({ message: 'No Slack users or channels to notify.' });
+      res.status(200).json({ message: 'No Slack users or channels to notify.' });
+      return;
     }
 
     // Initialize Slack Web API client
     const slackToken = process.env.SLACK_BOT_TOKEN;
+    if (!slackToken) {
+      res.status(500).json({ error: 'Slack token not configured' });
+      return;
+    }
     const slackClient = new WebClient(slackToken);
 
     // Prepare the standard Slack message
@@ -71,7 +98,7 @@ export default async function handler(req, res) {
       const normAlert = alertTypeFriendlyName.toLowerCase();
 
       // Determine cache keys based on event type
-      let threadKey, aggKey;
+      let threadKey: string, aggKey: string;
       if (normAlert === 'down') {
         threadKey = `${groupId}_down_thread`;
         aggKey = `${groupId}_down_aggregated`;
@@ -91,8 +118,8 @@ export default async function handler(req, res) {
       }
 
       const groupMessage = `Website *${website.friendlyName}* from group *${website.group.name}* is now *${alertTypeFriendlyName}*`;
-      let thread_ts = getCachedData(threadKey);
-      let aggregatedList = getCachedData(aggKey) || [];
+      let thread_ts = getCachedData<string>(threadKey) || undefined;
+      const aggregatedList = getCachedData<AggregatedAlert[]>(aggKey) || [];
 
       // Add current alert to the aggregated list if not already present
       if (!aggregatedList.find(item => item.monitorID === monitorID)) {
@@ -116,20 +143,15 @@ export default async function handler(req, res) {
       // For each Slack channel, update an existing thread or start a new one
       for (const channelId of slackChannels) {
         if (thread_ts) {
-          // Update the main thread message
+          // Update the main thread message with aggregated list
           await slackClient.chat.update({
             channel: channelId,
             ts: thread_ts,
             text: aggregatedMessage,
           });
-          // Post the new alert as a reply in the existing thread
-          await slackClient.chat.postMessage({
-            channel: channelId,
-            thread_ts,
-            text: groupMessage,
-            unfurl_links: false,
-            unfurl_media: false
-          });
+          
+          // Update message record with thread timestamp
+          await updateMessageRecord(thread_ts, thread_ts);
         } else {
           // No existing thread: create a new main message and store its thread timestamp
           const result = await slackClient.chat.postMessage({
@@ -138,28 +160,43 @@ export default async function handler(req, res) {
             unfurl_links: false,
             unfurl_media: false
           });
-          thread_ts = result.ts;
+          thread_ts = result.ts || undefined;
           setCachedData(threadKey, thread_ts, CACHE_TTL_SECONDS);
-          // Post the current alert as a reply in the new thread
-          await slackClient.chat.postMessage({
-            channel: channelId,
-            thread_ts,
-            text: groupMessage,
-            unfurl_links: false,
-            unfurl_media: false
-          });
+          
+          // Save message record for new thread
+          if (result.ts) {
+            await saveMessageRecord({
+              messageId: result.ts,
+              channelId,
+              threadTs: result.ts,
+              websiteId: parseInt(monitorID),
+              groupId,
+              alertType: alertTypeFriendlyName,
+            });
+          }
         }
       }
 
       // Send a separate notification to each Slack user
       for (const userId of slackUsers) {
         try {
-          await slackClient.chat.postMessage({
+          const result = await slackClient.chat.postMessage({
             channel: userId,
             text: groupMessage,
             unfurl_links: false,
             unfurl_media: false
           });
+          
+          // Save message record for user DM
+          if (result.ts) {
+            await saveMessageRecord({
+              messageId: result.ts,
+              channelId: userId,
+              websiteId: parseInt(monitorID),
+              groupId,
+              alertType: alertTypeFriendlyName,
+            });
+          }
         } catch (error) {
           console.error(`Failed to send message to Slack user ${userId}:`, error);
         }
@@ -167,21 +204,41 @@ export default async function handler(req, res) {
     } else {
       // For websites without a group, send the standard message separately
       for (const channelId of slackChannels) {
-        await slackClient.chat.postMessage({
+        const result = await slackClient.chat.postMessage({
           channel: channelId,
           text: standardMessage,
           unfurl_links: false,
           unfurl_media: false
         });
+        
+        // Save message record for channel message
+        if (result.ts) {
+          await saveMessageRecord({
+            messageId: result.ts,
+            channelId,
+            websiteId: parseInt(monitorID),
+            alertType: alertTypeFriendlyName,
+          });
+        }
       }
       for (const userId of slackUsers) {
         try {
-          await slackClient.chat.postMessage({
+          const result = await slackClient.chat.postMessage({
             channel: userId,
             text: standardMessage,
             unfurl_links: false,
             unfurl_media: false
           });
+          
+          // Save message record for user DM
+          if (result.ts) {
+            await saveMessageRecord({
+              messageId: result.ts,
+              channelId: userId,
+              websiteId: parseInt(monitorID),
+              alertType: alertTypeFriendlyName,
+            });
+          }
         } catch (error) {
           console.error(`Failed to send message to Slack user ${userId}:`, error);
         }
@@ -196,7 +253,7 @@ export default async function handler(req, res) {
 }
 
 // Helper function to format the Slack message
-function formatSlackMessage(data) {
+function formatSlackMessage(data: SlackMessageData): string {
   const {
     monitorURL,
     monitorFriendlyName,
@@ -237,7 +294,7 @@ function formatSlackMessage(data) {
 }
 
 // Helper function to format duration from seconds
-function formatDuration(seconds) {
+function formatDuration(seconds: string): string {
   const sec = parseInt(seconds, 10);
   return `${sec} sec`;
-}
+} 

@@ -14,7 +14,7 @@ import { useTheme } from 'next-themes';
 import { Spinner } from '@/components/ui/spinner';
 import { Palette, User, Hash, ArrowUp } from "lucide-react";
 import { useRouter } from 'next/router';
-import { useSession, signOut } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
 import AlertModal from '@/components/AlertModal';
 
 const Websites = () => {
@@ -25,7 +25,6 @@ const Websites = () => {
   const [error, setError] = useState(null);
   const { theme, setTheme } = useTheme();
   const router = useRouter();
-  const { data: session, status } = useSession();
 
   const [modalContent, setModalContent] = useState(null);
 

@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
   if (method === 'POST') {
     try {
-      const { action, url, keyword_value, id } = req.body;
+      const { action, url, keyword_value } = req.body;
 
       switch (action) {
         case 'newMonitor': {
