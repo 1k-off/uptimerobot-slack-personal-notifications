@@ -34,7 +34,7 @@ const HomePage = () => {
             <button
               id="signinAzure"
               onClick={() => signIn('azure-ad')}
-              className="mt-8 inline-flex items-center justify-center w-12 h-12 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              className="mt-8 inline-flex items-center justify-center w-12 h-12 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
               aria-label="Sign in with Microsoft"
             >
               <svg className="w-8 h-8" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">

@@ -9,13 +9,11 @@ export default function UnauthorizedPage() {
             <h1 className="text-4xl font-bold mb-4">Access Denied</h1>
             <p className="text-lg mb-6">
                 {session ?
-                    `You don't have permission to access the admin area, ${session.user.name}.` :
+                    `You don't have permission to access the admin area, ${session.user?.name}.` :
                     'You need to be logged in as an administrator to access this area.'}
             </p>
-            <Link href="/">
-                <div className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer">
+            <Link href="/" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer">
                     Return to Home
-                </div>
             </Link>
         </div>
     );

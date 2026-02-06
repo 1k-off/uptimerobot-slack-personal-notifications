@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { 
   Card, 
@@ -16,17 +16,44 @@ import { Palette, User, Hash, ArrowUp } from "lucide-react";
 import { useRouter } from 'next/router';
 import { signOut } from 'next-auth/react';
 import AlertModal from '@/components/AlertModal';
+import type { MonitorFormProps } from '@/types';
+
+interface SlackUser {
+  id: string;
+  name: string;
+}
+
+interface SlackChannel {
+  id: string;
+  name: string;
+}
+
+interface Website {
+  id: number;
+  friendly_name: string;
+  url: string;
+  alertContacts?: {
+    slack?: {
+      users?: string[];
+      channels?: string[];
+    };
+  };
+  group?: {
+    _id: string;
+    name: string;
+  };
+}
 
 const Websites = () => {
-  const [websites, setWebsites] = useState([]);
-  const [userOptions, setUserOptions] = useState([]); // To store all user options
-  const [channelOptions, setChannelOptions] = useState([]); // To store all channel options
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [websites, setWebsites] = useState<Website[]>([]);
+  const [userOptions, setUserOptions] = useState<SlackUser[]>([]);
+  const [channelOptions, setChannelOptions] = useState<SlackChannel[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const { theme, setTheme } = useTheme();
   const router = useRouter();
 
-  const [modalContent, setModalContent] = useState(null);
+  const [modalContent, setModalContent] = useState<React.ReactNode | null>(null);
 
   const fetchWebsites = async () => {
     try {
@@ -35,9 +62,9 @@ const Websites = () => {
         throw new Error('Failed to fetch websites');
       }
       const data = await response.json();
-      setWebsites(data);
+      setWebsites(data.success ? data.data : data);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -48,7 +75,7 @@ const Websites = () => {
       const response = await fetch('/api/slackUsers');
       if (response.ok) {
         const data = await response.json();
-        setUserOptions(data);
+        setUserOptions(data.success ? data.data : data);
       }
     } catch (error) {
       console.error('Failed to fetch user options:', error);
@@ -60,7 +87,7 @@ const Websites = () => {
       const response = await fetch('/api/slackChannels');
       if (response.ok) {
         const data = await response.json();
-        setChannelOptions(data);
+        setChannelOptions(data.success ? data.data : data);
       }
     } catch (error) {
       console.error('Failed to fetch channel options:', error);
@@ -73,7 +100,7 @@ const Websites = () => {
     fetchChannelOptions();
   }, []);
 
-  const handleEdit = (website) => {
+  const handleEdit = (website: Website) => {
     router.push({
       pathname: '/editWebsite',
       query: {
@@ -93,7 +120,7 @@ const Websites = () => {
     );
   };
 
-  const handleDeleteMonitor = (website) => {
+  const handleDeleteMonitor = (website: Website) => {
     setModalContent(
       <MonitorForm
         action="deleteMonitor"
@@ -106,12 +133,12 @@ const Websites = () => {
   };
 
   // Helper functions to get user/channel names
-  const getUserNameById = (id) => {
+  const getUserNameById = (id: string): string => {
     const user = userOptions.find((u) => u.id === id);
     return user ? user.name : id;
   };
 
-  const getChannelNameById = (id) => {
+  const getChannelNameById = (id: string): string => {
     const channel = channelOptions.find((c) => c.id === id);
     return channel ? channel.name : id;
   };
@@ -154,7 +181,7 @@ const Websites = () => {
           <div className="flex gap-2">
             <Button 
               onClick={handleCreateMonitor}
-              disabled={websites.length >= (process.env.NEXT_PUBLIC_UPTIMEROBOT_WEBSITES_ALL || 50)}
+              disabled={websites.length >= Number(process.env.NEXT_PUBLIC_UPTIMEROBOT_WEBSITES_ALL || 50)}
             >
               Create
             </Button>
@@ -192,17 +219,17 @@ const Websites = () => {
               <CardContent>
                 {/* Display Alert Contacts if they exist */}
                 {(
-                  (website.alertContacts?.slack?.users?.length > 0) ||
-                  (website.alertContacts?.slack?.channels?.length > 0)
+                  (website.alertContacts?.slack?.users?.length ?? 0) > 0 ||
+                  (website.alertContacts?.slack?.channels?.length ?? 0) > 0
                 ) && (
                   <div className="mt-2">
                     <h3 className="text-lg font-semibold">Alert Contacts:</h3>
                     <div className="flex flex-wrap mt-2">
                       {/* Display Users */}
-                      {website.alertContacts?.slack?.users?.length > 0 && (
+                      {(website.alertContacts?.slack?.users?.length ?? 0) > 0 && (
                         <div className="flex items-center mr-4">
                           <User className="mr-1" />
-                          {website.alertContacts.slack.users.map((userId) => (
+                          {website.alertContacts!.slack!.users!.map((userId) => (
                             <span key={userId} className="mr-2">
                               {getUserNameById(userId)}
                             </span>
@@ -210,10 +237,10 @@ const Websites = () => {
                         </div>
                       )}
                       {/* Display Channels */}
-                      {website.alertContacts?.slack?.channels?.length > 0 && (
+                      {(website.alertContacts?.slack?.channels?.length ?? 0) > 0 && (
                         <div className="flex items-center">
                           <Hash className="mr-1" />
-                          {website.alertContacts.slack.channels.map((channelId) => (
+                          {website.alertContacts!.slack!.channels!.map((channelId) => (
                             <span key={channelId} className="mr-2">
                               {getChannelNameById(channelId)}
                             </span>
@@ -250,20 +277,20 @@ const Websites = () => {
   );
 };
 
-const MonitorForm = ({ action, onClose, monitorId, websiteUrl, websiteName }) => {
-  const [url, setUrl] = useState('');
-  const [keyword, setKeyword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
+const MonitorForm = ({ action, onClose, monitorId, websiteUrl, websiteName }: MonitorFormProps) => {
+  const [url, setUrl] = useState<string>('');
+  const [keyword, setKeyword] = useState<string>('');
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
     setResult(null);
 
     try {
-      let payload = {};
-      let endpoint = '/api/uptimeRobot';
+      let payload: Record<string, unknown> = {};
+      const endpoint = '/api/uptimeRobot';
 
       if (action === 'newMonitor') {
         if (!url || !keyword) {
@@ -327,7 +354,7 @@ const MonitorForm = ({ action, onClose, monitorId, websiteUrl, websiteName }) =>
 
       setResult({ success: true, message: data.message || 'Success!' });
     } catch (err) {
-      setResult({ success: false, message: err.message });
+      setResult({ success: false, message: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setSubmitting(false);
     }
@@ -373,6 +400,7 @@ const MonitorForm = ({ action, onClose, monitorId, websiteUrl, websiteName }) =>
               onClick={onClose}
               disabled={submitting}
               className="mr-2"
+              type="button"
             >
               Cancel
             </Button>
@@ -394,6 +422,7 @@ const MonitorForm = ({ action, onClose, monitorId, websiteUrl, websiteName }) =>
               onClick={onClose}
               disabled={submitting}
               className="mr-2"
+              type="button"
             >
               Cancel
             </Button>

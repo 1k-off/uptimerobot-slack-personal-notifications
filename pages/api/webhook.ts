@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { connectToDatabase } from '@/lib/mongodb';
+import { getDatabase } from '@/lib/db';
 import { WebClient } from '@slack/web-api';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { WebhookData, SlackMessageData, Website } from '@/types';
@@ -54,7 +54,7 @@ export default async function handler(
     }: WebhookData = req.body;
 
     // Connect to the database and retrieve the website
-    const { db } = await connectToDatabase();
+    const db = await getDatabase();
     const websitesCollection = db.collection('websites');
     const website = await websitesCollection.findOne({ id: parseInt(monitorID) }) as Website | null;
 

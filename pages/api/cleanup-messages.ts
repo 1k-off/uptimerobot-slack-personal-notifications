@@ -21,7 +21,7 @@ export default async function handler(
   // Verify admin access using session
   const session = await getServerSession(req, res, authOptions);
   
-  if (!session || !session.user.isAdmin) {
+  if (!session || !session.user || !(session.user as { isAdmin?: boolean }).isAdmin) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }

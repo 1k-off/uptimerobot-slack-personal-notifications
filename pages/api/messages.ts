@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { connectToDatabase } from '@/lib/mongodb';
+import { getDatabase } from '@/lib/db';
 import { Message } from '@/types';
 
 interface ApiResponse {
@@ -17,15 +17,17 @@ export default async function handler(
   }
 
   try {
-    const { db } = await connectToDatabase();
+    const db = await getDatabase();
     const messagesCollection = db.collection('messages');
     
     // Get messages sorted by creation date (newest first)
-    const messages = await messagesCollection
+    const messagesData = await messagesCollection
       .find({})
       .sort({ createdAt: -1 })
       .limit(100) // Limit to last 100 messages
-      .toArray() as Message[];
+      .toArray();
+    
+    const messages = messagesData as unknown as Message[];
     
     res.status(200).json({ messages });
   } catch (error) {

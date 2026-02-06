@@ -11,6 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Check, ChevronDown, X, Loader2 } from "lucide-react";
+import { MultiSelectDropdownProps } from "@/types";
+
+interface GenericItem {
+  [key: string]: string | number | boolean | undefined;
+}
 
 export default function MultiSelectDropdown({
   apiEndpoint,
@@ -20,13 +25,13 @@ export default function MultiSelectDropdown({
   idKey = "id",
   selectedItems,
   setSelectedItems,
-}) {
+}: MultiSelectDropdownProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState([]);
-  const [error, setError] = useState(null);
+  const [items, setItems] = useState<GenericItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -37,7 +42,8 @@ export default function MultiSelectDropdown({
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setItems(Array.isArray(data) ? data : []);
+        const itemsData = data.success ? data.data : data;
+        setItems(Array.isArray(itemsData) ? itemsData : []);
       } catch (error) {
         console.error(`Error fetching items from ${apiEndpoint}:`, error);
         setError(`Failed to fetch items.`);
@@ -50,17 +56,18 @@ export default function MultiSelectDropdown({
     fetchItems();
   }, [apiEndpoint]);
 
-  const handleSelect = (item) => {
-    const itemId = item[idKey];
-    setSelectedItems((prev) =>
-      prev.includes(itemId)
-        ? prev.filter((i) => i !== itemId)
-        : [...prev, itemId]
-    );
+  const handleSelect = (item: GenericItem) => {
+    const itemId = String(item[idKey]);
+    setSelectedItems((prev: string[]) => {
+      if (prev.includes(itemId)) {
+        return prev.filter((i) => i !== itemId);
+      }
+      return [...prev, itemId];
+    });
   };
 
   const filteredItems = items.filter((item) =>
-    item[labelKey].toLowerCase().includes(searchTerm.toLowerCase())
+    String(item[labelKey]).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const displayValue =
@@ -75,7 +82,7 @@ export default function MultiSelectDropdown({
     }
   };
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
@@ -98,14 +105,13 @@ export default function MultiSelectDropdown({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 p-4 max-h-[33vh] min-h-[200px] overflow-y-auto">
-        {/* Search Input */}
         <div className="relative">
           <input
             type="text"
             placeholder={`Search ${placeholder.toLowerCase()}...`}
             value={searchTerm}
             onChange={handleSearchChange}
-            onKeyDown={(e) => e.stopPropagation()} // Stop event propagation
+            onKeyDown={(e) => e.stopPropagation()}
             className="mb-2 w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none pr-8"
             ref={inputRef}
           />
@@ -122,23 +128,23 @@ export default function MultiSelectDropdown({
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{placeholder}</DropdownMenuLabel>
 
-        {/* Loading State */}
         {loading ? (
           <div className="flex items-center justify-center px-4 py-2">
             <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
           </div>
         ) : filteredItems.length > 0 ? (
           filteredItems.map((item) => {
-            const isChecked = selectedItems.includes(item[idKey]);
+            const itemId = String(item[idKey]);
+            const isChecked = selectedItems.includes(itemId);
             return (
               <DropdownMenuCheckboxItem
-                key={item[idKey]}
+                key={itemId}
                 checked={isChecked}
                 onCheckedChange={() => handleSelect(item)}
                 className="flex items-center justify-between px-2 py-1 hover:bg-gray-200 rounded"
-                aria-label={item[labelKey]}
+                aria-label={String(item[labelKey])}
               >
-                <span>{item[labelKey]}</span>
+                <span>{String(item[labelKey])}</span>
                 {isChecked && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuCheckboxItem>
             );

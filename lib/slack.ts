@@ -1,16 +1,25 @@
 import { WebClient } from '@slack/web-api';
 
-async function getSlackUserIdByEmail(web, email) {
+interface SlackNotificationParams {
+  action: 'created' | 'deleted';
+  url: string;
+  friendly_name: string;
+  userEmail?: string;
+}
+
+async function getSlackUserIdByEmail(web: WebClient, email: string): Promise<string | null> {
   try {
     const response = await web.users.lookupByEmail({ email });
-    return response.user.id;
+    return response.user?.id || null;
   } catch (error) {
     console.error('Error finding Slack user by email:', error);
     return null;
   }
 }
 
-export async function sendSlackNotification({ action, url, friendly_name, userEmail }) {
+export async function sendSlackNotification(params: SlackNotificationParams): Promise<void> {
+  const { action, url, friendly_name, userEmail } = params;
+  
   const token = process.env.SLACK_BOT_TOKEN;
   if (!token) {
     console.warn('No SLACK_BOT_TOKEN specified');
@@ -56,4 +65,4 @@ export async function sendSlackNotification({ action, url, friendly_name, userEm
   } catch (error) {
     console.error('Error sending Slack notifications:', error);
   }
-} 
+}
