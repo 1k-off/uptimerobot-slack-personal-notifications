@@ -116,8 +116,8 @@ export async function cleanupOldMessages(): Promise<{ deletedCount: number; slac
         // Rate limiting: wait between deletions
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-      } catch (error: any) {
-        const errorCode = error.data?.error;
+      } catch (error: unknown) {
+        const errorCode = (error as { data?: { error?: string } }).data?.error;
         
         // Handle expected errors gracefully
         if (errorCode === 'message_not_found' || errorCode === 'channel_not_found') {
@@ -129,7 +129,8 @@ export async function cleanupOldMessages(): Promise<{ deletedCount: number; slac
           skipped++;
         } else {
           // Other errors
-          console.error(`✗ Failed to delete message ${message.messageId}: ${errorCode || error.message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`✗ Failed to delete message ${message.messageId}: ${errorCode || errorMessage}`);
           skipped++;
         }
       }
