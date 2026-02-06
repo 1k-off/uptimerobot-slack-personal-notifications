@@ -27,8 +27,11 @@ export default async function handler(
   }
 
   try {
-    await cleanupOldMessages();
-    res.status(200).json({ message: 'Message cleanup completed successfully' });
+    const result = await cleanupOldMessages();
+    res.status(200).json({ 
+      message: `Cleanup completed: ${result.slackDeleted} deleted from Slack, ${result.skipped} skipped, ${result.deletedCount} removed from DB`,
+      deletedCount: result.deletedCount
+    });
   } catch (error) {
     console.error('Error during manual cleanup:', error);
     res.status(500).json({ error: 'Internal server error during cleanup' });
