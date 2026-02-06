@@ -29,7 +29,7 @@ export default function AdminPage() {
     }
 
     const typedSession = session as Session | null;
-    console.log("Session in AdminPage:", typedSession); // Debugging line
+
     if (!typedSession || !typedSession.user.isAdmin) {
         router.push('/unauthorized');
         return null;
