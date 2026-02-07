@@ -80,6 +80,57 @@ class MessageRepository {
     const collection = await this.getCollection();
     return collection.find({}).sort({ createdAt: -1 }).toArray();
   }
+
+  async findWithPagination(
+    page: number = 1,
+    limit: number = 50,
+    search?: string
+  ): Promise<{ messages: MessageDocument[]; total: number }> {
+    const collection = await this.getCollection();
+    const skip = (page - 1) * limit;
+
+    // Build search filter
+    const filter: any = {};
+    if (search) {
+      const searchNumber = parseInt(search);
+      if (!isNaN(searchNumber)) {
+        // If search is a number, search by websiteId or messageId
+        filter.$or = [
+          { websiteId: searchNumber },
+          { messageId: search }
+        ];
+      } else {
+        // Otherwise search by messageId or channelId
+        filter.$or = [
+          { messageId: { $regex: search, $options: 'i' } },
+          { channelId: { $regex: search, $options: 'i' } },
+          { threadTs: { $regex: search, $options: 'i' } }
+        ];
+      }
+    }
+
+    const [messages, total] = await Promise.all([
+      collection
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+      collection.countDocuments(filter)
+    ]);
+
+    return { messages, total };
+  }
+
+  async countByDateRange(startDate: Date, endDate: Date): Promise<number> {
+    const collection = await this.getCollection();
+    return await collection.countDocuments({
+      createdAt: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+    });
+  }
 }
 
 export const messageRepository = new MessageRepository();

@@ -6,6 +6,9 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   message?: string;
+  total?: number;
+  page?: number;
+  limit?: number;
 }
 
 export type ApiHandler<T = unknown> = (
@@ -51,12 +54,15 @@ export function withErrorHandler<T = unknown>(
 export function sendSuccess<T>(
   res: NextApiResponse<ApiResponse<T>>,
   data?: T,
-  message?: string
+  metadata?: { message?: string; total?: number; page?: number; limit?: number }
 ): void {
   res.status(200).json({
     success: true,
     ...(data !== undefined && { data }),
-    ...(message && { message }),
+    ...(metadata?.message && { message: metadata.message }),
+    ...(metadata?.total !== undefined && { total: metadata.total }),
+    ...(metadata?.page !== undefined && { page: metadata.page }),
+    ...(metadata?.limit !== undefined && { limit: metadata.limit }),
   });
 }
 

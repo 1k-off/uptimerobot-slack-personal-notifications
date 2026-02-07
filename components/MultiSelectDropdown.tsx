@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, ChevronDown, X, Loader2 } from "lucide-react";
+import { ChevronDown, X, Loader2 } from "lucide-react";
 import { MultiSelectDropdownProps } from "@/types";
 
 interface GenericItem {
@@ -25,6 +25,7 @@ export default function MultiSelectDropdown({
   idKey = "id",
   selectedItems,
   setSelectedItems,
+  onItemsLoaded,
 }: MultiSelectDropdownProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
@@ -43,7 +44,11 @@ export default function MultiSelectDropdown({
         }
         const data = await response.json();
         const itemsData = data.success ? data.data : data;
-        setItems(Array.isArray(itemsData) ? itemsData : []);
+        const items = Array.isArray(itemsData) ? itemsData : [];
+        setItems(items);
+        if (onItemsLoaded) {
+          onItemsLoaded(items);
+        }
       } catch (error) {
         console.error(`Error fetching items from ${apiEndpoint}:`, error);
         setError(`Failed to fetch items.`);
@@ -104,7 +109,7 @@ export default function MultiSelectDropdown({
           <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 p-4 max-h-[33vh] min-h-[200px] overflow-y-auto">
+      <DropdownMenuContent className="w-56 p-4 max-h-[33vh] min-h-[200px] overflow-y-auto bg-[var(--bg-elevated)] border-zinc-800">
         <div className="relative">
           <input
             type="text"
@@ -112,13 +117,13 @@ export default function MultiSelectDropdown({
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={(e) => e.stopPropagation()}
-            className="mb-2 w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none pr-8"
+            className="mb-2 w-full px-2 py-1 border border-zinc-800 bg-[var(--bg-deepest)] text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 pr-8 placeholder:text-zinc-500"
             ref={inputRef}
           />
           {searchTerm && (
             <button
               onClick={handleClearSearch}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-white transition-colors focus:outline-none"
               aria-label="Clear search"
             >
               <X className="h-4 w-4" />
@@ -130,7 +135,7 @@ export default function MultiSelectDropdown({
 
         {loading ? (
           <div className="flex items-center justify-center px-4 py-2">
-            <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+            <Loader2 className="animate-spin h-5 w-5 text-zinc-400" />
           </div>
         ) : filteredItems.length > 0 ? (
           filteredItems.map((item) => {
@@ -141,16 +146,15 @@ export default function MultiSelectDropdown({
                 key={itemId}
                 checked={isChecked}
                 onCheckedChange={() => handleSelect(item)}
-                className="flex items-center justify-between px-2 py-1 hover:bg-gray-200 rounded"
+                className="pl-7 pr-2 py-1 hover:bg-[var(--bg-subtle)] rounded cursor-pointer"
                 aria-label={String(item[labelKey])}
               >
                 <span>{String(item[labelKey])}</span>
-                {isChecked && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuCheckboxItem>
             );
           })
         ) : (
-          <div className="px-4 py-2 text-gray-500">
+          <div className="px-4 py-2 text-zinc-500">
             No {placeholder.toLowerCase()} found.
           </div>
         )}

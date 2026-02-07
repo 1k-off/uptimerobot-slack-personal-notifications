@@ -1,6 +1,7 @@
 import { websiteRepository } from '@/lib/db';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { withErrorHandler } from '@/lib/api/response';
+import { editMonitor } from '@/lib/uptimeRobot';
 import type { Group } from '@/types';
 
 interface UpdateWebsiteRequest {
@@ -8,6 +9,11 @@ interface UpdateWebsiteRequest {
     friendlyName?: string;
     url?: string;
     group?: Group | null;
+    notificationPreferences?: {
+        downAlerts: boolean;
+        upAlerts: boolean;
+        latencyAlerts: boolean;
+    };
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -31,7 +37,32 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         }
         
         case 'PUT': {
-            const { alertContacts, friendlyName, url, group } = req.body as UpdateWebsiteRequest;
+            const { alertContacts, friendlyName, url, group, notificationPreferences } = req.body as UpdateWebsiteRequest;
+
+            // If friendlyName or url are being updated, sync with UptimeRobot first
+            if (friendlyName || url) {
+                const uptimeRobotParams: { id: number; friendly_name?: string; url?: string } = {
+                    id: websiteId,
+                };
+
+                if (friendlyName) {
+                    uptimeRobotParams.friendly_name = friendlyName;
+                }
+
+                if (url) {
+                    uptimeRobotParams.url = url;
+                }
+
+                try {
+                    await editMonitor(uptimeRobotParams);
+                } catch (error) {
+                    console.error('Failed to update UptimeRobot monitor:', error);
+                    return res.status(500).json({ 
+                        error: 'Failed to update monitor in UptimeRobot',
+                        details: error instanceof Error ? error.message : 'Unknown error'
+                    });
+                }
+            }
 
             const updateFields: Record<string, unknown> = {
                 alertContacts,
@@ -39,7 +70,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
             if (friendlyName) updateFields.friendlyName = friendlyName;
             if (url) updateFields.url = url;
-            if (group) updateFields.group = group;
+            if (group !== undefined) updateFields.group = group;
+            if (notificationPreferences !== undefined) updateFields.notificationPreferences = notificationPreferences;
 
             await websiteRepository.upsert(websiteId, updateFields);
 

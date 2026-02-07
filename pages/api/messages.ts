@@ -4,6 +4,9 @@ import { Message } from '@/types';
 
 interface ApiResponse {
   messages?: Message[];
+  total?: number;
+  page?: number;
+  limit?: number;
   error?: string;
 }
 
@@ -17,12 +20,23 @@ export default async function handler(
   }
 
   try {
-    const messagesData = await messageRepository.findAll();
+    const { page = '1', limit = '50', search = '' } = req.query;
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const searchStr = search as string;
+
+    const { messages, total } = await messageRepository.findWithPagination(
+      pageNum,
+      limitNum,
+      searchStr.trim() || undefined
+    );
     
-    // Limit to last 100 messages (already sorted in repository)
-    const messages = messagesData.slice(0, 100) as unknown as Message[];
-    
-    res.status(200).json({ messages });
+    res.status(200).json({ 
+      messages: messages as unknown as Message[],
+      total,
+      page: pageNum,
+      limit: limitNum
+    });
   } catch (error) {
     console.error('Error fetching messages:', error);
     res.status(500).json({ error: 'Internal server error' });

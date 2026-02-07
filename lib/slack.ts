@@ -13,8 +13,12 @@ async function getSlackUserIdByEmail(web: WebClient, email: string): Promise<str
   try {
     const response = await web.users.lookupByEmail({ email });
     return response.user?.id || null;
-  } catch (error) {
-    console.error('Error finding Slack user by email:', error);
+  } catch (error: any) {
+    if (error?.data?.error === 'users_not_found') {
+      console.warn(`Slack user not found for email: ${email}. User may not be in the workspace.`);
+    } else {
+      console.error('Error finding Slack user by email:', error);
+    }
     return null;
   }
 }
@@ -52,8 +56,12 @@ export async function sendSlackNotification(params: SlackNotificationParams): Pr
           channel: `#${channel.replace(/^#/, '')}`,
           text: message.text,
         });
-      } catch (channelError) {
-        console.error(`Error sending message to channel ${channel}:`, channelError);
+      } catch (channelError: any) {
+        if (channelError?.data?.error === 'channel_not_found') {
+          console.warn(`Slack channel not found: #${channel}. Please check SLACK_CHANNEL_ACTION_NOTIFY configuration.`);
+        } else {
+          console.error(`Error sending message to channel ${channel}:`, channelError);
+        }
       }
     });
 

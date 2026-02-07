@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { X, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Group, GroupAutocompleteProps } from "@/types";
 
 const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProps) => {
@@ -109,13 +106,11 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
     );
 
   return (
-    <div className="relative inline-block min-w-[400px]">
-      <Label htmlFor="group" className="mt-2">
-        Group
-      </Label>
-      <div className="relative mt-1">
-        <Input
+    <div className="relative w-full">
+      <div className="relative">
+        <input
           id="group"
+          type="text"
           value={inputValue}
           onChange={(e) => {
             setInputValue(e.target.value);
@@ -123,14 +118,14 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
           }}
           placeholder="Type to search or create a group..."
           autoComplete="off"
-          className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none pr-8"
+          className="w-full bg-[var(--bg-elevated)] border border-zinc-800 rounded-lg px-4 py-3 pr-10 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
           ref={inputRef}
           onBlur={handleBlur}
         />
         {inputValue && (
           <button
             onClick={() => setInputValue("")}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-white transition-colors focus:outline-none"
             aria-label="Clear search"
           >
             <X className="h-4 w-4" />
@@ -138,10 +133,10 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
         )}
       </div>
       {(suggestions.length > 0 || loading || createOption) && (
-        <ul className="absolute bg-popover text-sm z-10 w-full mt-1 rounded-md shadow-md max-h-60 overflow-y-auto outline-none transition-colors">
+        <ul className="absolute bg-[var(--bg-elevated)] border border-zinc-800 text-sm z-10 w-full mt-2 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {loading ? (
-            <li className="flex items-center justify-center p-2">
-              <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+            <li className="flex items-center justify-center p-3">
+              <Loader2 className="animate-spin h-5 w-5 text-zinc-400" />
             </li>
           ) : (
             <>
@@ -149,7 +144,7 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
                 <li
                   key={group._id}
                   onMouseDown={() => handleSelect(group)}
-                  className="p-2 hover:bg-accent cursor-pointer"
+                  className="px-4 py-2.5 hover:bg-[var(--bg-subtle)] cursor-pointer text-white transition-colors first:rounded-t-lg last:rounded-b-lg"
                 >
                   {group.name}
                 </li>
@@ -157,9 +152,9 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
               {createOption && (
                 <li
                   onMouseDown={handleCreateNew}
-                  className="p-2 hover:bg-accent cursor-pointer"
+                  className="px-4 py-2.5 hover:bg-[var(--bg-subtle)] cursor-pointer text-blue-400 transition-colors border-t border-zinc-800 last:rounded-b-lg"
                 >
-                  {inputValue} (new)
+                  Create "{inputValue}"
                 </li>
               )}
             </>
@@ -167,25 +162,21 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
         </ul>
       )}
       {value && (
-        <div className="mt-2">
-          <Card className="w-3/4 py-0">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium">{value.name}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onChange(null);
-                    setInputValue("");
-                  }}
-                  className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                  aria-label="Clear selected group"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="mt-3">
+          <div className="inline-flex items-center gap-2 bg-[var(--bg-subtle)] border border-zinc-700 rounded-lg px-3 py-2">
+            <span className="text-sm text-white">{value.name}</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange(null);
+                setInputValue("");
+              }}
+              className="text-zinc-400 hover:text-white transition-colors focus:outline-none"
+              aria-label="Clear selected group"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       )}
     </div>

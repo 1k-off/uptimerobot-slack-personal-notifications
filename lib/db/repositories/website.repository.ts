@@ -16,6 +16,11 @@ export interface WebsiteDocument {
     _id: string;
     name: string;
   };
+  notificationPreferences?: {
+    downAlerts: boolean;
+    upAlerts: boolean;
+    latencyAlerts: boolean;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
