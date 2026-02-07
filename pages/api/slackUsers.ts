@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { withErrorHandler, sendSuccess } from '@/lib/api';
+import { getEnvConfig } from '@/lib/config';
 import { SlackUser } from '@/types';
 
 interface SlackUserMember {
@@ -24,23 +25,12 @@ interface SlackUsersResponse {
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const token = process.env.SLACK_BOT_TOKEN;
+  const config = getEnvConfig();
   
-  if (!token) {
-    throw new Error('SLACK_BOT_TOKEN not configured');
-  }
-
   let allUsers: SlackUserMember[] = [];
   let cursor: string | undefined;
 
-  // Retrieve cache time from environment variables (in seconds)
-  const cacheTimeStr = process.env.SLACK_DATA_CACHE_TIME || '1800';
-  const cacheTimeNum = parseInt(cacheTimeStr, 10);
-
-  if (isNaN(cacheTimeNum) || cacheTimeNum <= 0) {
-    console.warn(`Invalid SLACK_DATA_CACHE_TIME value: ${cacheTimeStr}. Falling back to default of 1800 seconds.`);
-  }
-  const cacheTime = (!isNaN(cacheTimeNum) && cacheTimeNum > 0) ? cacheTimeNum : 1800;
+  const cacheTime = config.slackDataCacheTime;
 
   // Check for cached users
   const cachedData = getCachedData('users') as { users: SlackUser[]; timestamp: number } | null;
@@ -65,7 +55,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${config.slackBotToken}`,
           'Content-Type': 'application/json',
         },
       });

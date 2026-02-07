@@ -1,4 +1,4 @@
-import { getDatabase } from '@/lib/db';
+import { groupRepository } from '@/lib/db';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { withErrorHandler } from '@/lib/api/response';
 import type { Group } from '@/types';
@@ -10,15 +10,24 @@ interface CreateGroupRequest {
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
-    const db = await getDatabase();
 
     switch (method) {
         case 'GET': {
             // Allow filtering groups by q query parameter (case-insensitive search)
             const { q } = req.query;
-            const query = q && typeof q === 'string' ? { name: { $regex: q, $options: 'i' } } : {};
             
-            const groups = await db.collection('groups').find(query).toArray();
+            let groups;
+            if (q && typeof q === 'string') {
+                // For search, we'd need to add a search method to the repository
+                // For now, get all and filter (not optimal for large datasets)
+                const allGroups = await groupRepository.findAll();
+                groups = allGroups.filter(g => 
+                    g.name.toLowerCase().includes(q.toLowerCase())
+                );
+            } else {
+                groups = await groupRepository.findAll();
+            }
+            
             res.status(200).json(groups.map(g => ({
                 _id: g._id.toString(),
                 name: g.name,
@@ -38,35 +47,34 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             }
             
             // Look for an existing group with the same name
-            const existingGroup = await db.collection('groups').findOne({ name });
+            const existingGroup = await groupRepository.findByName(name);
             
             if (!existingGroup) {
                 // Create a new group
-                const newGroup = {
+                const newGroup = await groupRepository.create({
                     name,
                     websites: websiteId ? [websiteId] : [],
-                    createdAt: new Date(),
-                };
-                const insertResult = await db.collection('groups').insertOne(newGroup);
+                });
+                
                 res.status(200).json({
-                    _id: insertResult.insertedId.toString(),
-                    ...newGroup
+                    _id: newGroup._id.toString(),
+                    name: newGroup.name,
+                    websites: newGroup.websites,
+                    createdAt: newGroup.createdAt
                 } as Group);
                 return;
             } else {
-                // Group exists
+                // Group exists - add website if needed
+                if (websiteId && !existingGroup.websites?.includes(websiteId)) {
+                    await groupRepository.addWebsiteToGroup(
+                        existingGroup._id.toString(),
+                        websiteId
+                    );
+                }
+                
                 const updatedWebsites = websiteId && !existingGroup.websites?.includes(websiteId)
                     ? [...(existingGroup.websites || []), websiteId]
                     : existingGroup.websites || [];
-                
-                if (websiteId && !existingGroup.websites?.includes(websiteId)) {
-                    // Add websiteId to existing group if not present
-                    await db.collection('groups').updateOne(
-                        { _id: existingGroup._id },
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        { $push: { websites: websiteId } } as any
-                    );
-                }
                 
                 res.status(200).json({
                     _id: existingGroup._id.toString(),

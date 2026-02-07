@@ -1,5 +1,6 @@
-import { WebClient } from "@slack/web-api";
-import { getDatabase } from "./db";
+import { getSlackClient } from '@/lib/services/slack-client';
+import { getEnvConfig } from '@/lib/config';
+import { messageRepository } from "./db";
 import { MessageRecord } from "@/types";
 
 /**
@@ -9,19 +10,7 @@ export async function saveMessageRecord(
   messageRecord: MessageRecord,
 ): Promise<void> {
   try {
-    const db = await getDatabase();
-    const messagesCollection = db.collection("messages");
-
-    await messagesCollection.insertOne({
-      messageId: messageRecord.messageId,
-      channelId: messageRecord.channelId,
-      threadTs: messageRecord.threadTs,
-      websiteId: messageRecord.websiteId,
-      groupId: messageRecord.groupId,
-      alertType: messageRecord.alertType,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    await messageRepository.create(messageRecord);
   } catch (error) {
     console.error("Error saving message record:", error);
   }
@@ -35,18 +24,7 @@ export async function updateMessageRecord(
   threadTs?: string,
 ): Promise<void> {
   try {
-    const db = await getDatabase();
-    const messagesCollection = db.collection("messages");
-
-    await messagesCollection.updateOne(
-      { messageId },
-      {
-        $set: {
-          threadTs,
-          updatedAt: new Date(),
-        },
-      },
-    );
+    await messageRepository.updateThreadTs(messageId, threadTs || '');
   } catch (error) {
     console.error("Error updating message record:", error);
   }
@@ -56,44 +34,27 @@ export async function updateMessageRecord(
  * Clean up old messages based on environment settings
  */
 export async function cleanupOldMessages(): Promise<void> {
-  const shouldPrune = process.env.SLACK_PRUNE_OLD_MESSAGES === "true";
-  const keepSeconds = parseInt(
-    process.env.SLACK_KEEP_MESSAGES_SECONDS || "120",
-    10,
-  );
+  const config = getEnvConfig();
 
-  if (!shouldPrune) {
+  if (!config.slackPruneOldMessages) {
     return;
   }
 
   try {
-    const db = await getDatabase();
-    const messagesCollection = db.collection("messages");
-
     // Calculate cutoff time
-    const cutoffTime = new Date(Date.now() - keepSeconds * 1000);
+    const cutoffTime = new Date(Date.now() - config.slackKeepMessagesSeconds * 1000);
 
-    // Find old messages
-    const oldMessages = await messagesCollection
-      .find({
-        createdAt: { $lt: cutoffTime },
-      })
-      .toArray();
+    // Find old messages using repository
+    const oldMessages = await messageRepository.findOldMessages(cutoffTime);
 
     if (oldMessages.length === 0) {
       return;
     }
 
     // Initialize Slack client
-    const slackToken = process.env.SLACK_BOT_TOKEN;
-    if (!slackToken) {
-      console.error("SLACK_BOT_TOKEN not configured for cleanup");
-      return;
-    }
+    const slackClient = getSlackClient();
 
-    const slackClient = new WebClient(slackToken);
-
-    // Delete messages from Slack and database
+    // Delete messages from Slack and track successful deletions
     const messageIdsToRemoveFromDb: string[] = [];
 
     for (const message of oldMessages) {
@@ -108,19 +69,28 @@ export async function cleanupOldMessages(): Promise<void> {
           `Deleted old message ${message.messageId} from channel ${message.channelId}`,
         );
         messageIdsToRemoveFromDb.push(message.messageId);
-      } catch (error) {
-        console.error(`Failed to delete message ${message.messageId}:`, error);
+      } catch (error: any) {
+        // If channel not found or message not found, we should still remove from DB
+        if (error?.data?.error === 'channel_not_found' || error?.data?.error === 'message_not_found') {
+          console.log(`Message ${message.messageId} not accessible (${error.data.error}), removing from database`);
+          messageIdsToRemoveFromDb.push(message.messageId);
+        } else {
+          console.error(`Failed to delete message ${message.messageId}:`, error);
+        }
       }
     }
 
-    // Remove from database only messages that were successfully deleted or inaccessible
+    // Remove successfully deleted messages from database
     if (messageIdsToRemoveFromDb.length > 0) {
-      const deleteResult = await messagesCollection.deleteMany({
-        messageId: { $in: messageIdsToRemoveFromDb },
-      });
+      // Delete each message individually
+      let deletedCount = 0;
+      for (const messageId of messageIdsToRemoveFromDb) {
+        const deleted = await messageRepository.delete(messageId);
+        if (deleted) deletedCount++;
+      }
 
       console.log(
-        `Cleaned up ${deleteResult.deletedCount} old message records (${oldMessages.length} total found)`,
+        `Cleaned up ${deletedCount} old message records (${oldMessages.length} total found)`,
       );
     } else {
       console.log(
@@ -136,9 +106,9 @@ export async function cleanupOldMessages(): Promise<void> {
  * Schedule cleanup to run periodically
  */
 export function scheduleCleanup(): void {
-  const shouldPrune = process.env.SLACK_PRUNE_OLD_MESSAGES === "true";
+  const config = getEnvConfig();
 
-  if (!shouldPrune) {
+  if (!config.slackPruneOldMessages) {
     return;
   }
 

@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getDatabase } from '@/lib/db';
-import { WebClient } from '@slack/web-api';
+import { websiteRepository } from '@/lib/db';
+import { getSlackClient } from '@/lib/services/slack-client';
+import { getEnvConfig } from '@/lib/config';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { WebhookData, SlackMessageData, Website } from '@/types';
 import { saveMessageRecord, updateMessageRecord } from '@/lib/slack-cleanup';
@@ -25,10 +26,10 @@ export default async function handler(
   res: NextApiResponse<ApiResponse>
 ): Promise<void> {
   // Verify secret token
-  const secretToken = process.env.WEBHOOK_SECRET_TOKEN;
+  const config = getEnvConfig();
   const providedToken = req.query.token as string;
 
-  if (!providedToken || providedToken !== secretToken) {
+  if (!providedToken || providedToken !== config.webhookSecretToken) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
@@ -53,10 +54,8 @@ export default async function handler(
       sslExpiryDaysLeft,
     }: WebhookData = req.body;
 
-    // Connect to the database and retrieve the website
-    const db = await getDatabase();
-    const websitesCollection = db.collection('websites');
-    const website = await websitesCollection.findOne({ id: parseInt(monitorID) }) as Website | null;
+    // Retrieve the website from database using repository
+    const website = await websiteRepository.findById(parseInt(monitorID)) as Website | null;
 
     if (!website || !website.alertContacts) {
       res.status(200).json({ message: 'No alert contacts defined.' });
@@ -72,12 +71,7 @@ export default async function handler(
     }
 
     // Initialize Slack Web API client
-    const slackToken = process.env.SLACK_BOT_TOKEN;
-    if (!slackToken) {
-      res.status(500).json({ error: 'Slack token not configured' });
-      return;
-    }
-    const slackClient = new WebClient(slackToken);
+    const slackClient = getSlackClient();
 
     // Prepare the standard Slack message
     const standardMessage = formatSlackMessage({

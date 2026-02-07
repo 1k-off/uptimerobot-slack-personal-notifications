@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getDatabase } from '@/lib/db';
+import { websiteRepository } from '@/lib/db';
 import { fetchMonitors } from '@/lib/uptimeRobot';
 import { withErrorHandler, sendSuccess, sendError } from '@/lib/api';
 
@@ -13,39 +13,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Fetch monitors from UptimeRobot
     const monitors = await fetchMonitors();
     const websiteIds = monitors.map((m) => m.id);
-    const db = await getDatabase();
 
-    // Fetch website data from MongoDB
-    const dbWebsites = await db
-      .collection('websites')
-      .find({ id: { $in: websiteIds } })
-      .toArray();
+    // Fetch website data from MongoDB using repository
+    const dbWebsites = await websiteRepository.findByIds(websiteIds);
 
-    interface DbWebsite {
-      id: number;
-      friendlyName?: string;
-      url?: string;
-      alertContacts?: unknown;
-      group?: unknown;
-    }
-
-    const dbWebsitesMap: Record<number, DbWebsite> = {};
-    dbWebsites.forEach((w) => {
-      const website = w as unknown as DbWebsite;
-      if (website.id) {
-        dbWebsitesMap[website.id] = website;
-      }
-    });
+    const dbWebsitesMap = new Map(dbWebsites.map(w => [w.id, w]));
 
     // Merge data
     const mergedData = monitors.map((monitor) => {
-      const dbData = dbWebsitesMap[monitor.id] || {};
+      const dbData = dbWebsitesMap.get(monitor.id);
       return {
         ...monitor,
-        friendly_name: dbData.friendlyName || monitor.friendly_name,
-        url: dbData.url || monitor.url,
-        alertContacts: dbData.alertContacts || null,
-        group: dbData.group || null,
+        friendly_name: dbData?.friendlyName || monitor.friendly_name,
+        url: dbData?.url || monitor.url,
+        alertContacts: dbData?.alertContacts || null,
+        group: dbData?.group || null,
       };
     });
 

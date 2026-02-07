@@ -64,6 +64,12 @@ class MessageRepository {
     return result.deletedCount;
   }
 
+  async delete(messageId: string): Promise<boolean> {
+    const collection = await this.getCollection();
+    const result = await collection.deleteOne({ messageId });
+    return result.deletedCount > 0;
+  }
+
   async deleteAll(): Promise<number> {
     const collection = await this.getCollection();
     const result = await collection.deleteMany({});

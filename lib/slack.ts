@@ -1,4 +1,6 @@
-import { WebClient } from '@slack/web-api';
+import { getSlackClient } from '@/lib/services/slack-client';
+import { getEnvConfig } from '@/lib/config';
+import type { WebClient } from '@slack/web-api';
 
 interface SlackNotificationParams {
   action: 'created' | 'deleted';
@@ -19,20 +21,14 @@ async function getSlackUserIdByEmail(web: WebClient, email: string): Promise<str
 
 export async function sendSlackNotification(params: SlackNotificationParams): Promise<void> {
   const { action, url, friendly_name, userEmail } = params;
-  
-  const token = process.env.SLACK_BOT_TOKEN;
-  if (!token) {
-    console.warn('No SLACK_BOT_TOKEN specified');
-    return;
-  }
+  const config = getEnvConfig();
 
-  const channels = process.env.SLACK_CHANNEL_ACTION_NOTIFY?.split(',').map(channel => channel.trim()) || [];
-  if (!channels.length) {
+  if (!config.slackChannelActionNotify.length) {
     console.warn('No channels specified in SLACK_CHANNEL_ACTION_NOTIFY');
     return;
   }
 
-  const web = new WebClient(token);
+  const web = getSlackClient();
   
   // Get Slack user ID if email is provided
   let actorMention = '';
@@ -50,7 +46,7 @@ export async function sendSlackNotification(params: SlackNotificationParams): Pr
   };
 
   try {
-    const notifications = channels.map(async channel => {
+    const notifications = config.slackChannelActionNotify.map(async channel => {
       try {
         await web.chat.postMessage({
           channel: `#${channel.replace(/^#/, '')}`,

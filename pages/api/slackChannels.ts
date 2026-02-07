@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getCachedData, setCachedData } from '@/lib/cache';
 import { withErrorHandler, sendSuccess } from '@/lib/api';
+import { getEnvConfig } from '@/lib/config';
 import { SlackChannel } from '@/types';
 
 interface SlackConversation {
@@ -20,32 +21,13 @@ interface SlackApiResponse {
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const token = process.env.SLACK_BOT_TOKEN;
+  const config = getEnvConfig();
   
-  if (!token) {
-    throw new Error('SLACK_BOT_TOKEN not configured');
-  }
-
   let allChannels: SlackConversation[] = [];
   let cursor: string | undefined;
 
-  // Retrieve hidden channels from environment variables
-  const hiddenChannelsEnv = process.env.SLACK_HIDDEN_CHANNELS || '';
-  const hiddenChannelNames = hiddenChannelsEnv
-    .split(',')
-    .map(name => name.trim())
-    .filter(name => name.length > 0)
-    .map(name => name.toLowerCase());
-
-  // Retrieve cache time from environment variables (in seconds)
-  const cacheTimeEnv = process.env.SLACK_DATA_CACHE_TIME || '1800';
-  const cacheTime = parseInt(cacheTimeEnv, 10);
-
-  if (isNaN(cacheTime) || cacheTime <= 0) {
-    console.warn(`Invalid SLACK_DATA_CACHE_TIME value: ${cacheTimeEnv}. Falling back to default of 1800 seconds.`);
-  }
-
-  const effectiveCacheTime = (!isNaN(cacheTime) && cacheTime > 0) ? cacheTime : 1800;
+  const hiddenChannelNames = config.slackHiddenChannels.map(name => name.toLowerCase());
+  const cacheTime = config.slackDataCacheTime;
 
   // Check for cached channels
   const cachedData = getCachedData('channels') as { channels: SlackChannel[]; timestamp: number } | null;
@@ -54,7 +36,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const currentTime = Date.now();
     const elapsedSeconds = (currentTime - timestamp) / 1000;
 
-    if (elapsedSeconds < effectiveCacheTime) {
+    if (elapsedSeconds < cacheTime) {
       const visibleChannels = cachedChannels.filter((channel: SlackChannel) =>
         !hiddenChannelNames.includes(channel.name.toLowerCase())
       );
@@ -74,7 +56,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${config.slackBotToken}`,
           'Content-Type': 'application/json',
         },
       });
@@ -98,7 +80,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         isClosed: channel.is_closed || false,
       }));
 
-    setCachedData('channels', { channels, timestamp: Date.now() }, effectiveCacheTime);
+    setCachedData('channels', { channels, timestamp: Date.now() }, cacheTime);
 
     sendSuccess(res, channels);
   } catch (error) {

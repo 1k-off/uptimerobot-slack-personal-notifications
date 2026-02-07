@@ -1,4 +1,5 @@
 import { setCachedData } from './cache';
+import { getEnvConfig } from '@/lib/config';
 
 export interface UptimeRobotMonitor {
   id: number;
@@ -53,9 +54,9 @@ class UptimeRobotError extends Error {
 }
 
 export async function fetchMonitors(): Promise<UptimeRobotMonitor[]> {
-  const apiKey = process.env.UPTIMEROBOT_API_KEY;
+  const config = getEnvConfig();
   
-  if (!apiKey) {
+  if (!config.uptimeRobotApiKey) {
     throw new Error('UPTIMEROBOT_API_KEY not configured');
   }
 
@@ -64,20 +65,12 @@ export async function fetchMonitors(): Promise<UptimeRobotMonitor[]> {
   let offset = 0;
   let totalMonitors = 0;
 
-  // Retrieve cache time from environment variables (in seconds)
-  const cacheTimeStr = process.env.UPTIMEROBOT_DATA_CACHE_TIME || '600';
-  const cacheTimeNum = parseInt(cacheTimeStr, 10);
-  
-  if (isNaN(cacheTimeNum) || cacheTimeNum <= 0) {
-    console.warn(`Invalid UPTIMEROBOT_DATA_CACHE_TIME value: ${cacheTimeStr}. Falling back to default of 600 seconds.`);
-  }
-  
-  const cacheTime = (!isNaN(cacheTimeNum) && cacheTimeNum > 0) ? cacheTimeNum : 600;
+  const cacheTime = config.uptimeRobotDataCacheTime;
 
   try {
     do {
       const body = new URLSearchParams({
-        api_key: apiKey,
+        api_key: config.uptimeRobotApiKey,
         format: 'json',
         limit: limit.toString(),
         offset: offset.toString(),
@@ -123,9 +116,9 @@ export async function fetchMonitors(): Promise<UptimeRobotMonitor[]> {
 }
 
 export async function newMonitor(params: NewMonitorParams): Promise<UptimeRobotResponse> {
-  const apiKey = process.env.UPTIMEROBOT_API_KEY;
+  const config = getEnvConfig();
   
-  if (!apiKey) {
+  if (!config.uptimeRobotApiKey) {
     throw new Error('UPTIMEROBOT_API_KEY not configured');
   }
 
@@ -137,7 +130,7 @@ export async function newMonitor(params: NewMonitorParams): Promise<UptimeRobotR
     .join('-');
 
   const body = new URLSearchParams({
-    api_key: apiKey,
+    api_key: config.uptimeRobotApiKey,
     friendly_name: params.friendly_name,
     url: params.url,
     type: '2', // keyword
@@ -170,14 +163,14 @@ export async function newMonitor(params: NewMonitorParams): Promise<UptimeRobotR
 }
 
 export async function deleteMonitor(params: DeleteMonitorParams): Promise<UptimeRobotResponse> {
-  const apiKey = process.env.UPTIMEROBOT_API_KEY;
+  const config = getEnvConfig();
   
-  if (!apiKey) {
+  if (!config.uptimeRobotApiKey) {
     throw new Error('UPTIMEROBOT_API_KEY not configured');
   }
 
   const body = new URLSearchParams({
-    api_key: apiKey,
+    api_key: config.uptimeRobotApiKey,
     id: String(params.id),
   });
 
@@ -200,22 +193,20 @@ export async function deleteMonitor(params: DeleteMonitorParams): Promise<Uptime
 }
 
 export async function getAlertContactsByNames(): Promise<string[]> {
-  const apiKey = process.env.UPTIMEROBOT_API_KEY;
+  const config = getEnvConfig();
   
-  if (!apiKey) {
+  if (!config.uptimeRobotApiKey) {
     throw new Error('UPTIMEROBOT_API_KEY not configured');
   }
-  
-  const contactNames = process.env.UPTIMEROBOT_ALERT_CONTACT_NAMES?.split(',').map(name => name.trim()) || [];
 
-  if (!contactNames.length) {
+  if (!config.uptimeRobotAlertContactNames.length) {
     console.warn('No alert contact names specified in UPTIMEROBOT_ALERT_CONTACT_NAMES');
     return [];
   }
 
   try {
     const body = new URLSearchParams({
-      api_key: apiKey,
+      api_key: config.uptimeRobotApiKey,
       format: 'json'
     });
 
@@ -235,14 +226,14 @@ export async function getAlertContactsByNames(): Promise<string[]> {
     }
 
     const matchingContacts = data.alert_contacts
-      ?.filter(contact => contactNames.includes(contact.friendly_name))
+      ?.filter(contact => config.uptimeRobotAlertContactNames.includes(contact.friendly_name))
       .map(contact => contact.id) || [];
 
-    if (matchingContacts.length < contactNames.length) {
+    if (matchingContacts.length < config.uptimeRobotAlertContactNames.length) {
       const foundNames = data.alert_contacts
-        ?.filter(contact => contactNames.includes(contact.friendly_name))
+        ?.filter(contact => config.uptimeRobotAlertContactNames.includes(contact.friendly_name))
         .map(contact => contact.friendly_name) || [];
-      const missingNames = contactNames.filter(name => !foundNames.includes(name));
+      const missingNames = config.uptimeRobotAlertContactNames.filter(name => !foundNames.includes(name));
       console.warn('Some alert contact names were not found:', missingNames);
     }
 

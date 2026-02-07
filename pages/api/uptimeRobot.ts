@@ -1,4 +1,4 @@
-import { getDatabase } from '@/lib/db';
+import { websiteRepository } from '@/lib/db';
 import { fetchMonitors, newMonitor, deleteMonitor } from '@/lib/uptimeRobot';
 import { sendSlackNotification } from '@/lib/slack';
 import { getServerSession } from "next-auth/next";
@@ -78,10 +78,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 const numericId = parseInt(id, 10);
                 const deletedData = await deleteMonitor({ id: numericId });
 
-                let dbResult = { acknowledged: false, deletedCount: 0 };
+                let dbDeleted = false;
                 try {
-                    const db = await getDatabase();
-                    dbResult = await db.collection('websites').deleteOne({ id: numericId });
+                    dbDeleted = await websiteRepository.delete(numericId);
                 } catch (dbError) {
                     console.error('Error deleting website from DB:', dbError);
                     res.status(500).json({
@@ -102,7 +101,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                     message: 'Monitor deleted',
                     data: {
                         uptimeRobotResult: deletedData,
-                        dbDeleted: dbResult.deletedCount > 0,
+                        dbDeleted,
                     }
                 });
                 return;
