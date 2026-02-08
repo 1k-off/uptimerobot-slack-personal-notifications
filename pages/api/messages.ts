@@ -1,9 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { connectToDatabase } from '@/lib/mongodb';
+import { messageRepository } from '@/lib/db';
 import { Message } from '@/types';
 
 interface ApiResponse {
   messages?: Message[];
+  total?: number;
+  page?: number;
+  limit?: number;
   error?: string;
 }
 
@@ -17,17 +20,23 @@ export default async function handler(
   }
 
   try {
-    const { db } = await connectToDatabase();
-    const messagesCollection = db.collection('messages');
+    const { page = '1', limit = '50', search = '' } = req.query;
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const searchStr = search as string;
+
+    const { messages, total } = await messageRepository.findWithPagination(
+      pageNum,
+      limitNum,
+      searchStr.trim() || undefined
+    );
     
-    // Get messages sorted by creation date (newest first)
-    const messages = await messagesCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .limit(100) // Limit to last 100 messages
-      .toArray() as Message[];
-    
-    res.status(200).json({ messages });
+    res.status(200).json({ 
+      messages: messages as unknown as Message[],
+      total,
+      page: pageNum,
+      limit: limitNum
+    });
   } catch (error) {
     console.error('Error fetching messages:', error);
     res.status(500).json({ error: 'Internal server error' });
