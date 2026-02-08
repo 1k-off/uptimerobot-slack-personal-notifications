@@ -32,6 +32,9 @@ interface Website {
   id: number;
   friendly_name: string;
   url: string;
+  status?: number; // UptimeRobot status: 0=paused, 1=not checked yet, 2=up, 8=seems down, 9=down
+  type?: number;
+  uptime_ratio?: number;
   alertContacts?: {
     slack?: {
       users?: string[];
@@ -311,19 +314,34 @@ const Websites = () => {
         {/* Grid of Monitoring Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {websites.map((website) => {
-            const isUp = true; // Since we don't have status data, default to up
-            // const statusColor = isUp ? 'green' : 'red'; // TODO: add dynamic status color based on real status
+            // UptimeRobot status codes: 0=paused, 1=not checked yet, 2=up, 8=seems down, 9=down
+            const isUp = website.status === 2;
+            const isPaused = website.status === 0;
+            const isDown = website.status === 8 || website.status === 9;
+            const statusText = isPaused ? 'Paused' : isUp ? 'Up' : isDown ? 'Down' : 'Unknown';
             
             return (
               <div 
                 key={website.id}
-                className={`bg-[var(--bg-elevated)] border ${isUp ? 'border-zinc-800' : 'border-red-500/30'} rounded-2xl p-6 hover:border-white/20 transition-all group`}
+                className={`bg-[var(--bg-elevated)] border ${
+                  isUp ? 'border-zinc-800' : 
+                  isDown ? 'border-red-500/30' : 
+                  'border-amber-500/30'
+                } rounded-2xl p-6 hover:border-white/20 transition-all group`}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${isUp ? 'bg-green-500 status-pulse-green' : 'bg-red-500 status-pulse-red'}`}></div>
+                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                      isUp ? 'bg-green-500 status-pulse-green' : 
+                      isDown ? 'bg-red-500 status-pulse-red' : 
+                      isPaused ? 'bg-amber-500' : 'bg-zinc-500'
+                    }`}></div>
                     <div className="min-w-0 flex-1">
-                      <h3 className={`font-bold text-lg truncate ${isUp ? 'group-hover:text-green-400' : 'group-hover:text-red-400'} transition-colors`}>
+                      <h3 className={`font-bold text-lg truncate ${
+                        isUp ? 'group-hover:text-green-400' : 
+                        isDown ? 'group-hover:text-red-400' : 
+                        'group-hover:text-amber-400'
+                      } transition-colors`}>
                         {website.friendly_name}
                       </h3>
                       <Link 
@@ -336,8 +354,13 @@ const Websites = () => {
                       </Link>
                     </div>
                   </div>
-                  <div className={`${isUp ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'} text-xs px-2 py-1 rounded font-bold uppercase tracking-wider flex-shrink-0 ml-2`}>
-                    {isUp ? 'Up' : 'Down'}
+                  <div className={`${
+                    isUp ? 'bg-green-500/10 text-green-500' : 
+                    isDown ? 'bg-red-500/10 text-red-500' : 
+                    isPaused ? 'bg-amber-500/10 text-amber-500' :
+                    'bg-zinc-500/10 text-zinc-500'
+                  } text-xs px-2 py-1 rounded font-bold uppercase tracking-wider flex-shrink-0 ml-2`}>
+                    {statusText}
                   </div>
                 </div>
                 
@@ -379,9 +402,13 @@ const Websites = () => {
                   )}
                   
                   <div className="pt-4 border-t border-zinc-800 flex items-center justify-between">
-                    <span className="text-xs text-zinc-400">
-                      Last checked: <span>Just now</span>
-                    </span>
+                    <div className="text-xs text-zinc-400">
+                      {website.uptime_ratio !== undefined && (
+                        <span className="font-medium">
+                          Uptime: {website.uptime_ratio}%
+                        </span>
+                      )}
+                    </div>
                     <div className="flex gap-2">
                       <button 
                         onClick={() => handleEdit(website)}
