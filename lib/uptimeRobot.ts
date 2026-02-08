@@ -102,7 +102,9 @@ export async function fetchMonitors(): Promise<UptimeRobotMonitor[]> {
             errorMessage = data.error;
           } else if (typeof data.error === "object") {
             errorMessage =
-              data.error.message || data.error.type || JSON.stringify(data.error);
+              data.error.message ||
+              data.error.type ||
+              JSON.stringify(data.error);
           }
         }
         throw new UptimeRobotError(errorMessage, data);

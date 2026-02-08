@@ -35,18 +35,18 @@ export default function Header({ currentPage = "dashboard" }: HeaderProps) {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/websites"
-              className={`text-sm font-medium transition-colors ${
-                currentPage === "monitors"
-                  ? "text-white border-b-2 border-white pb-1"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              Monitors
-            </Link>
             {isAdmin && (
               <>
+                <Link
+                  href="/websites"
+                  className={`text-sm font-medium transition-colors ${
+                    currentPage === "monitors"
+                      ? "text-white border-b-2 border-white pb-1"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  Monitors
+                </Link>
                 <Link
                   href="/admin/messages"
                   className={`text-sm font-medium transition-colors ${

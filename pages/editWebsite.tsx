@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import MultiSelectDropdown from '@/components/MultiSelectDropdown';
-import GroupAutocomplete from '@/components/GroupAutocomplete';
-import { Spinner } from '@/components/ui/spinner';
-import { toast } from 'sonner'
-import { 
-  Hash, 
-  Globe, 
-  MessageSquare, 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import MultiSelectDropdown from "@/components/MultiSelectDropdown";
+import GroupAutocomplete from "@/components/GroupAutocomplete";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
+import {
+  Hash,
+  Globe,
+  MessageSquare,
   Bell,
   TrendingDown,
   TrendingUp,
@@ -17,9 +17,9 @@ import {
   LayoutDashboard,
   ChevronRight,
   Trash2,
-} from 'lucide-react';
-import Header from '@/components/Header';
-import type { Group } from '@/types';
+} from "lucide-react";
+import Header from "@/components/Header";
+import type { Group } from "@/types";
 
 interface SlackUser {
   id: string;
@@ -53,8 +53,8 @@ const EditWebsite = () => {
   const router = useRouter();
   const { id, friendlyName: queryFriendlyName, url: queryUrl } = router.query;
   const [website, setWebsite] = useState<WebsiteData | null>(null);
-  const [friendlyName, setFriendlyName] = useState<string>('');
-  const [url, setUrl] = useState<string>('');
+  const [friendlyName, setFriendlyName] = useState<string>("");
+  const [url, setUrl] = useState<string>("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [userOptions, setUserOptions] = useState<SlackUser[]>([]);
@@ -62,7 +62,7 @@ const EditWebsite = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [deleting, setDeleting] = useState<boolean>(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  
+
   // Notification preferences
   const [downAlerts, setDownAlerts] = useState<boolean>(true);
   const [upAlerts, setUpAlerts] = useState<boolean>(true);
@@ -77,12 +77,14 @@ const EditWebsite = () => {
         if (response.ok) {
           const data: WebsiteData = await response.json();
           setWebsite(data);
-          setFriendlyName(data.friendlyName || (queryFriendlyName as string) || '');
-          setUrl(data.url || (queryUrl as string) || '');
+          setFriendlyName(
+            data.friendlyName || (queryFriendlyName as string) || "",
+          );
+          setUrl(data.url || (queryUrl as string) || "");
           setSelectedUsers(data.alertContacts?.slack?.users || []);
           setSelectedChannels(data.alertContacts?.slack?.channels || []);
           if (data.group) setSelectedGroup(data.group);
-          
+
           // Load notification preferences
           if (data.notificationPreferences) {
             setDownAlerts(data.notificationPreferences.downAlerts);
@@ -92,11 +94,11 @@ const EditWebsite = () => {
         } else {
           // Website data not found, initialize with query parameters
           setWebsite({ id: parseInt(id as string) });
-          setFriendlyName((queryFriendlyName as string) || '');
-          setUrl((queryUrl as string) || '');
+          setFriendlyName((queryFriendlyName as string) || "");
+          setUrl((queryUrl as string) || "");
         }
       } catch (error) {
-        console.error('Failed to fetch website data:', error);
+        console.error("Failed to fetch website data:", error);
       } finally {
         setLoading(false);
       }
@@ -117,7 +119,9 @@ const EditWebsite = () => {
       friendlyName,
       url,
       alertContacts,
-      group: selectedGroup ? { _id: selectedGroup._id, name: selectedGroup.name } : null,
+      group: selectedGroup
+        ? { _id: selectedGroup._id, name: selectedGroup.name }
+        : null,
       notificationPreferences: {
         downAlerts,
         upAlerts,
@@ -125,25 +129,24 @@ const EditWebsite = () => {
       },
     };
 
-
     try {
       const response = await fetch(`/api/websites/${id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(updateData),
       });
 
       if (response.ok) {
-        toast.success('Website updated successfully');
+        toast.success("Website updated successfully");
       } else {
         const data = await response.json();
-        toast.error(`Error updating website: ${data.error || 'Unknown error'}`);
+        toast.error(`Error updating website: ${data.error || "Unknown error"}`);
       }
     } catch (error) {
-      console.error('Failed to update website:', error);
-      toast.error('Failed to update website');
+      console.error("Failed to update website:", error);
+      toast.error("Failed to update website");
     }
   };
 
@@ -167,21 +170,25 @@ const EditWebsite = () => {
   };
 
   const handleCancel = () => {
-    router.push('/websites');
+    router.push("/websites");
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${friendlyName}"?\n\nThis action cannot be undone. The monitor will be removed from both UptimeRobot and your database.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${friendlyName}"?\n\nThis action cannot be undone. The monitor will be removed from both UptimeRobot and your database.`,
+      )
+    ) {
       return;
     }
 
     setDeleting(true);
     try {
-      const response = await fetch('/api/uptimeRobot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/uptimeRobot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'deleteMonitor',
+          action: "deleteMonitor",
           id: id,
           url: url,
           friendly_name: friendlyName,
@@ -190,20 +197,23 @@ const EditWebsite = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        const errorMessage = typeof errorData.error === 'string' 
-          ? errorData.error 
-          : errorData.error?.message || 'Failed to delete monitor';
+        const errorMessage =
+          typeof errorData.error === "string"
+            ? errorData.error
+            : errorData.error?.message || "Failed to delete monitor";
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      toast.success(data.message || 'Monitor deleted successfully');
-      
+      toast.success(data.message || "Monitor deleted successfully");
+
       // Redirect to websites list after successful deletion
-      router.push('/websites');
+      router.push("/websites");
     } catch (error) {
-      console.error('Failed to delete monitor:', error);
-      toast.error(`Failed to delete monitor: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("Failed to delete monitor:", error);
+      toast.error(
+        `Failed to delete monitor: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     } finally {
       setDeleting(false);
     }
@@ -218,12 +228,17 @@ const EditWebsite = () => {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         {/* Breadcrumb & Back */}
         <nav className="flex items-center gap-2 text-sm text-zinc-500 mb-6">
-          <Link href="/websites" className="hover:text-zinc-300 flex items-center gap-1 transition-colors">
+          <Link
+            href="/websites"
+            className="hover:text-zinc-300 flex items-center gap-1 transition-colors"
+          >
             <LayoutDashboard className="w-4 h-4" />
             Websites List
           </Link>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-zinc-200">{friendlyName || 'Edit Monitor'}</span>
+          <span className="text-zinc-200">
+            {friendlyName || "Edit Monitor"}
+          </span>
         </nav>
 
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 border-b border-zinc-900 pb-6">
@@ -236,19 +251,22 @@ const EditWebsite = () => {
                   Loading...
                 </span>
               ) : (
-                <>Modify monitoring settings for <span className="text-blue-400">{friendlyName}</span></>
+                <>
+                  Modify monitoring settings for{" "}
+                  <span className="text-blue-400">{friendlyName}</span>
+                </>
               )}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={handleCancel}
               disabled={loading || deleting}
               className="px-4 py-2 rounded-lg border border-zinc-800 text-zinc-400 hover:bg-[var(--bg-elevated)] transition-all font-medium text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={handleSave}
               disabled={loading || deleting}
               className="px-4 py-2 rounded-lg bg-white text-black hover:bg-zinc-200 transition-all font-semibold text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -268,14 +286,14 @@ const EditWebsite = () => {
               </div>
               <h2 className="text-lg font-semibold">Website Information</h2>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
                   Display Name
                 </label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={friendlyName}
                   onChange={(e) => setFriendlyName(e.target.value)}
                   disabled={loading}
@@ -289,8 +307,8 @@ const EditWebsite = () => {
                 </label>
                 <div className="relative">
                   <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4" />
-                  <input 
-                    type="url" 
+                  <input
+                    type="url"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     disabled={loading}
@@ -338,15 +356,19 @@ const EditWebsite = () => {
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                   {selectedChannels.map((channelId) => (
-                    <label 
+                    <label
                       key={channelId}
                       className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 hover:border-zinc-700 cursor-pointer transition-all"
                     >
                       <div className="flex items-center gap-2 flex-1">
                         <Hash className="w-4 h-4 text-zinc-400" />
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium">{getChannelNameById(channelId)}</span>
-                          <span className="text-[10px] text-zinc-500">Slack Channel</span>
+                          <span className="text-sm font-medium">
+                            {getChannelNameById(channelId)}
+                          </span>
+                          <span className="text-[10px] text-zinc-500">
+                            Slack Channel
+                          </span>
                         </div>
                       </div>
                     </label>
@@ -372,7 +394,7 @@ const EditWebsite = () => {
                   {selectedUsers.map((userId) => {
                     const userName = getUserNameById(userId);
                     return (
-                      <label 
+                      <label
                         key={userId}
                         className="flex flex-col items-center gap-2 p-3 rounded-xl border border-zinc-800 hover:border-zinc-700 cursor-pointer transition-all text-center"
                       >
@@ -396,7 +418,9 @@ const EditWebsite = () => {
               <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                 <Bell className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-semibold">Notification Preferences</h2>
+              <h2 className="text-lg font-semibold">
+                Notification Preferences
+              </h2>
             </div>
 
             <div className="space-y-4">
@@ -407,12 +431,14 @@ const EditWebsite = () => {
                   </div>
                   <div>
                     <p className="font-medium text-sm">Down Alerts</p>
-                    <p className="text-xs text-zinc-500">Send notification immediately when the monitor goes down.</p>
+                    <p className="text-xs text-zinc-500">
+                      Send notification immediately when the monitor goes down.
+                    </p>
                   </div>
                 </div>
                 <label className="relative inline-block w-11 h-6">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={downAlerts}
                     onChange={(e) => setDownAlerts(e.target.checked)}
                     className="opacity-0 w-0 h-0 peer"
@@ -430,12 +456,14 @@ const EditWebsite = () => {
                   </div>
                   <div>
                     <p className="font-medium text-sm">Up Alerts</p>
-                    <p className="text-xs text-zinc-500">Notify when the service recovers and is back online.</p>
+                    <p className="text-xs text-zinc-500">
+                      Notify when the service recovers and is back online.
+                    </p>
                   </div>
                 </div>
                 <label className="relative inline-block w-11 h-6">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={upAlerts}
                     onChange={(e) => setUpAlerts(e.target.checked)}
                     className="opacity-0 w-0 h-0 peer"
@@ -453,12 +481,15 @@ const EditWebsite = () => {
                   </div>
                   <div>
                     <p className="font-medium text-sm">Latency Alerts</p>
-                    <p className="text-xs text-zinc-500">Notify if response time exceeds 2000ms for 3 consecutive checks.</p>
+                    <p className="text-xs text-zinc-500">
+                      Notify if response time exceeds 2000ms for 3 consecutive
+                      checks.
+                    </p>
                   </div>
                 </div>
                 <label className="relative inline-block w-11 h-6">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={latencyAlerts}
                     onChange={(e) => setLatencyAlerts(e.target.checked)}
                     className="opacity-0 w-0 h-0 peer"
@@ -474,23 +505,23 @@ const EditWebsite = () => {
 
         {/* Footer Actions */}
         <div className="mt-12 pt-8 border-t border-zinc-900 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-          <button 
+          <button
             onClick={handleDelete}
             disabled={deleting || loading}
             className="flex items-center gap-2 text-red-500 hover:text-red-400 text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 className="w-4 h-4" />
-            {deleting ? 'Deleting...' : 'Delete this monitor'}
+            {deleting ? "Deleting..." : "Delete this monitor"}
           </button>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button 
+            <button
               onClick={handleCancel}
               disabled={deleting}
               className="flex-1 sm:flex-none px-8 py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:bg-[var(--bg-elevated)] transition-all font-medium text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={handleSave}
               disabled={deleting}
               className="flex-1 sm:flex-none px-8 py-3 rounded-xl bg-white text-black hover:bg-zinc-200 transition-all font-bold text-sm shadow-lg shadow-white/5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
