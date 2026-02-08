@@ -98,8 +98,7 @@ export async function cleanupOldMessages(): Promise<{ deletedCount: number; slac
           // Bot doesn't have permission or not in channel - likely from another bot
           console.log(`⚠ Skipping message ${message.messageId}: ${errorCode}`);
           skipped++;
-        } else {
-          // Other errors - log but continue cleanup
+        } else {          // Other errors - log but continue cleanup
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           console.error(`✗ Failed to delete message ${message.messageId}: ${errorCode || errorMessage}`);
           skipped++;
