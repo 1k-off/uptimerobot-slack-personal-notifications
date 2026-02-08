@@ -60,6 +60,7 @@ const EditWebsite = () => {
   const [userOptions, setUserOptions] = useState<SlackUser[]>([]);
   const [channelOptions, setChannelOptions] = useState<SlackChannel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [deleting, setDeleting] = useState<boolean>(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   
   // Notification preferences
@@ -170,9 +171,41 @@ const EditWebsite = () => {
   };
 
   const handleDelete = async () => {
-    if (confirm(`Are you sure you want to delete ${friendlyName}?`)) {
-      // TODO: Implement delete functionality
+    if (!confirm(`Are you sure you want to delete "${friendlyName}"?\n\nThis action cannot be undone. The monitor will be removed from both UptimeRobot and your database.`)) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const response = await fetch('/api/uptimeRobot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'deleteMonitor',
+          id: id,
+          url: url,
+          friendly_name: friendlyName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage = typeof errorData.error === 'string' 
+          ? errorData.error 
+          : errorData.error?.message || 'Failed to delete monitor';
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      toast.success(data.message || 'Monitor deleted successfully');
+      
+      // Redirect to websites list after successful deletion
       router.push('/websites');
+    } catch (error) {
+      console.error('Failed to delete monitor:', error);
+      toast.error(`Failed to delete monitor: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -210,14 +243,14 @@ const EditWebsite = () => {
           <div className="flex items-center gap-3">
             <button 
               onClick={handleCancel}
-              disabled={loading}
+              disabled={loading || deleting}
               className="px-4 py-2 rounded-lg border border-zinc-800 text-zinc-400 hover:bg-[var(--bg-elevated)] transition-all font-medium text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button 
               onClick={handleSave}
-              disabled={loading}
+              disabled={loading || deleting}
               className="px-4 py-2 rounded-lg bg-white text-black hover:bg-zinc-200 transition-all font-semibold text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Changes
@@ -443,21 +476,24 @@ const EditWebsite = () => {
         <div className="mt-12 pt-8 border-t border-zinc-900 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
           <button 
             onClick={handleDelete}
-            className="flex items-center gap-2 text-red-500 hover:text-red-400 text-sm font-medium transition-colors cursor-pointer"
+            disabled={deleting || loading}
+            className="flex items-center gap-2 text-red-500 hover:text-red-400 text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 className="w-4 h-4" />
-            Delete this monitor
+            {deleting ? 'Deleting...' : 'Delete this monitor'}
           </button>
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button 
               onClick={handleCancel}
-              className="flex-1 sm:flex-none px-8 py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:bg-[var(--bg-elevated)] transition-all font-medium text-sm cursor-pointer"
+              disabled={deleting}
+              className="flex-1 sm:flex-none px-8 py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:bg-[var(--bg-elevated)] transition-all font-medium text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button 
               onClick={handleSave}
-              className="flex-1 sm:flex-none px-8 py-3 rounded-xl bg-white text-black hover:bg-zinc-200 transition-all font-bold text-sm shadow-lg shadow-white/5 cursor-pointer"
+              disabled={deleting}
+              className="flex-1 sm:flex-none px-8 py-3 rounded-xl bg-white text-black hover:bg-zinc-200 transition-all font-bold text-sm shadow-lg shadow-white/5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Changes
             </button>
