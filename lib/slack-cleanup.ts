@@ -33,11 +33,12 @@ export async function updateMessageRecord(
 /**
  * Clean up old messages based on environment settings
  */
-export async function cleanupOldMessages(): Promise<void> {
+export async function cleanupOldMessages(): Promise<{ deletedCount: number; slackDeleted: number; skipped: number }> {
   const config = getEnvConfig();
 
   if (!config.slackPruneOldMessages) {
-    return;
+    console.log('Cleanup skipped: SLACK_PRUNE_OLD_MESSAGES not enabled');
+    return { deletedCount: 0, slackDeleted: 0, skipped: 0 };
   }
 
   try {
@@ -48,57 +49,85 @@ export async function cleanupOldMessages(): Promise<void> {
     const oldMessages = await messageRepository.findOldMessages(cutoffTime);
 
     if (oldMessages.length === 0) {
-      return;
+      console.log('No old messages to clean up');
+      return { deletedCount: 0, slackDeleted: 0, skipped: 0 };
     }
+
+    console.log(`Found ${oldMessages.length} old messages to clean up`);
 
     // Initialize Slack client
     const slackClient = getSlackClient();
 
-    // Delete messages from Slack and track successful deletions
-    const messageIdsToRemoveFromDb: string[] = [];
+    // Get bot's own user ID to identify which messages this bot created
+    let botUserId: string | undefined;
+    try {
+      const authTest = await slackClient.auth.test();
+      botUserId = authTest.user_id as string;
+      console.log(`Current bot user ID: ${botUserId}`);
+    } catch (error) {
+      console.error('Failed to get bot user ID:', error);
+    }
 
+    let slackDeleted = 0;
+    let skipped = 0;
+
+    // Delete messages from Slack
     for (const message of oldMessages) {
       try {
-        // Delete from Slack
+        // Attempt to delete from Slack
         await slackClient.chat.delete({
           channel: message.channelId,
           ts: message.messageId,
+          as_user: true, // Delete as the bot user
         });
 
-        console.log(
-          `Deleted old message ${message.messageId} from channel ${message.channelId}`,
-        );
-        messageIdsToRemoveFromDb.push(message.messageId);
-      } catch (error: any) {
-        // If channel not found or message not found, we should still remove from DB
-        if (error?.data?.error === 'channel_not_found' || error?.data?.error === 'message_not_found') {
-          console.log(`Message ${message.messageId} not accessible (${error.data.error}), removing from database`);
-          messageIdsToRemoveFromDb.push(message.messageId);
+        console.log(`✓ Deleted message ${message.messageId} from ${message.channelId}`);
+        slackDeleted++;
+
+        // Rate limiting: wait between deletions to avoid hitting Slack API limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      } catch (error: unknown) {
+        const errorCode = (error as { data?: { error?: string } }).data?.error;
+
+        // Handle expected errors gracefully
+        if (errorCode === 'message_not_found' || errorCode === 'channel_not_found') {
+          // Message or channel already deleted - this is fine, count as skipped
+          skipped++;
+        } else if (errorCode === 'cant_delete_message' || errorCode === 'not_in_channel') {
+          // Bot doesn't have permission or not in channel - likely from another bot
+          console.log(`⚠ Skipping message ${message.messageId}: ${errorCode}`);
+          skipped++;
         } else {
-          console.error(`Failed to delete message ${message.messageId}:`, error);
+          // Other errors - log but continue cleanup
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`✗ Failed to delete message ${message.messageId}: ${errorCode || errorMessage}`);
+          skipped++;
         }
       }
     }
 
-    // Remove successfully deleted messages from database
-    if (messageIdsToRemoveFromDb.length > 0) {
-      // Delete each message individually
-      let deletedCount = 0;
-      for (const messageId of messageIdsToRemoveFromDb) {
-        const deleted = await messageRepository.delete(messageId);
-        if (deleted) deletedCount++;
-      }
+    // Remove ALL old messages from database (regardless of Slack deletion success)
+    // This is more efficient than individual deletes and ensures DB stays clean
+    const deletedCount = await messageRepository.deleteOldMessages(cutoffTime);
 
-      console.log(
-        `Cleaned up ${deletedCount} old message records (${oldMessages.length} total found)`,
-      );
-    } else {
-      console.log(
-        `No messages were successfully deleted or removed from database`,
-      );
-    }
+    console.log(`
+✅ Cleanup Summary:
+   - Total old messages: ${oldMessages.length}
+   - Deleted from Slack: ${slackDeleted}
+   - Skipped (errors/no access): ${skipped}
+   - Removed from DB: ${deletedCount}
+    `);
+
+    return {
+      deletedCount,
+      slackDeleted,
+      skipped
+    };
+
   } catch (error) {
-    console.error("Error during message cleanup:", error);
+    console.error('Error during message cleanup:', error);
+    throw error;
   }
 }
 

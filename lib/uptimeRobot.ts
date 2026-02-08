@@ -96,10 +96,16 @@ export async function fetchMonitors(): Promise<UptimeRobotMonitor[]> {
       const data: UptimeRobotResponse = await response.json();
 
       if (data.stat !== "ok") {
-        throw new UptimeRobotError(
-          data.error || "Failed to fetch monitors.",
-          data,
-        );
+        let errorMessage = "Failed to fetch monitors";
+        if (data.error) {
+          if (typeof data.error === "string") {
+            errorMessage = data.error;
+          } else if (typeof data.error === "object") {
+            errorMessage =
+              data.error.message || data.error.type || JSON.stringify(data.error);
+          }
+        }
+        throw new UptimeRobotError(errorMessage, data);
       }
 
       totalMonitors = data.monitors?.length || 0;
