@@ -134,6 +134,11 @@ const Websites = () => {
   useEffect(() => {
     if (!router.isReady) return;
 
+    const currentSearch = (router.query.search as string) || "";
+    
+    // Only update URL if search query is different from current URL param
+    if (searchQuery === currentSearch) return;
+
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
 
@@ -154,7 +159,7 @@ const Websites = () => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, router.isReady]);
+  }, [searchQuery, router.isReady, router.query.search]);
 
   const handleEdit = (website: Website) => {
     router.push({
