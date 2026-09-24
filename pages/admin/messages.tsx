@@ -145,17 +145,44 @@ export default function AdminMessages() {
 
     setCleanupLoading(true);
     try {
-      const response = await fetch("/api/cleanup-messages", {
-        method: "POST",
-      });
+      let totalProcessed = 0;
+      let totalSlackDeleted = 0;
+      let remaining = 0;
+      let rounds = 0;
+      const maxRounds = 200; // safety cap (~5k msgs at 25/batch)
 
-      if (response.ok) {
-        toast.success("Automated cleanup completed successfully");
-        fetchMessages();
-        setSelectedMessages([]);
-      } else {
-        toast.error("Cleanup failed");
+      while (rounds < maxRounds) {
+        rounds++;
+        const response = await fetch("/api/cleanup-messages", {
+          method: "POST",
+        });
+
+        if (!response.ok) {
+          toast.error("Cleanup failed");
+          return;
+        }
+
+        const data = await response.json();
+        totalProcessed += data.processed ?? 0;
+        totalSlackDeleted += data.slackDeleted ?? 0;
+        remaining = data.remaining ?? 0;
+
+        if (!data.hasMore) {
+          break;
+        }
       }
+
+      if (remaining > 0) {
+        toast.success(
+          `Cleanup paused after ${rounds} batches (${totalProcessed} processed, ${remaining} still remaining). Run again to continue.`,
+        );
+      } else {
+        toast.success(
+          `Cleanup completed: ${totalSlackDeleted} deleted from Slack across ${rounds} batch(es).`,
+        );
+      }
+      fetchMessages();
+      setSelectedMessages([]);
     } catch (error) {
       console.error("Error triggering cleanup:", error);
       toast.error("Cleanup failed");

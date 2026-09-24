@@ -24,9 +24,27 @@ class MessageRepository {
     return collection.findOne({ messageId });
   }
 
-  async findOldMessages(cutoffTime: Date): Promise<MessageDocument[]> {
+  async findOldMessages(cutoffTime: Date, limit?: number): Promise<MessageDocument[]> {
     const collection = await this.getCollection();
-    return collection.find({ createdAt: { $lt: cutoffTime } }).toArray();
+    let cursor = collection.find({ createdAt: { $lt: cutoffTime } }).sort({ createdAt: 1 });
+    if (limit !== undefined) {
+      cursor = cursor.limit(limit);
+    }
+    return cursor.toArray();
+  }
+
+  async countOldMessages(cutoffTime: Date): Promise<number> {
+    const collection = await this.getCollection();
+    return collection.countDocuments({ createdAt: { $lt: cutoffTime } });
+  }
+
+  async deleteByMessageIds(messageIds: string[]): Promise<number> {
+    if (messageIds.length === 0) {
+      return 0;
+    }
+    const collection = await this.getCollection();
+    const result = await collection.deleteMany({ messageId: { $in: messageIds } });
+    return result.deletedCount;
   }
 
   async create(data: Omit<MessageDocument, '_id' | 'createdAt' | 'updatedAt'>): Promise<MessageDocument> {
