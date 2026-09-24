@@ -110,7 +110,8 @@ export interface MultiSelectDropdownProps {
   labelKey?: string;
   idKey?: string;
   selectedItems: string[];
-  setSelectedItems: (items: string[]) => void;
+  setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>;
+  onItemsLoaded?: (items: any[]) => void;
 }
 
 export interface GroupAutocompleteProps {
