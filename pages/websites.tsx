@@ -521,51 +521,49 @@ const Websites = () => {
                 </div>
 
                 <div className="flex-1 space-y-4">
-                  {/* Group info */}
-                  {website.group && (
-                    <div>
-                      <span className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                        Group
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="flex items-center gap-1.5 bg-[var(--bg-subtle)] px-3 py-1 rounded-full text-xs">
-                          {website.group.name}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Alert Contacts */}
                   {((website.alertContacts?.slack?.users?.length ?? 0) > 0 ||
                     (website.alertContacts?.slack?.channels?.length ?? 0) >
                       0) && (
                     <div>
-                      <span className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
+                      <span className="block text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2">
                         Alert Contacts
                       </span>
-                      <div className="flex flex-wrap gap-2">
-                        {/* Channels */}
+                      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto custom-scrollbar pb-0.5">
                         {website.alertContacts?.slack?.channels?.map(
                           (channelId) => (
                             <span
                               key={channelId}
-                              className="flex items-center gap-1.5 bg-[var(--bg-subtle)] px-3 py-1 rounded-full text-xs"
+                              className="flex items-center gap-1.5 bg-[var(--bg-subtle)] px-3 py-1 rounded-full text-xs whitespace-nowrap shrink-0"
                             >
                               <Hash className="w-3 h-3" />
                               {getChannelNameById(channelId)}
                             </span>
                           ),
                         )}
-                        {/* Users */}
                         {website.alertContacts?.slack?.users?.map((userId) => (
                           <span
                             key={userId}
-                            className="flex items-center gap-1.5 bg-[var(--bg-subtle)] px-3 py-1 rounded-full text-xs"
+                            className="flex items-center gap-1.5 bg-[var(--bg-subtle)] px-3 py-1 rounded-full text-xs whitespace-nowrap shrink-0"
                           >
                             <User className="w-3 h-3" />
                             {getUserNameById(userId)}
                           </span>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Group info */}
+                  {website.group && (
+                    <div>
+                      <span className="block text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2">
+                        Group
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="flex items-center gap-1.5 bg-[var(--bg-subtle)] px-3 py-1 rounded-full text-xs">
+                          {website.group.name}
+                        </span>
                       </div>
                     </div>
                   )}
