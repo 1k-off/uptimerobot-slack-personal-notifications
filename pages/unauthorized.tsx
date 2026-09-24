@@ -27,17 +27,17 @@ export default function UnauthorizedPage() {
           You don&apos;t have permission to access this page
         </p>
 
-        <div className="bg-[var(--bg-elevated)] border border-zinc-800 rounded-2xl p-8 mb-8 shadow-2xl">
-          <p className="text-zinc-400 leading-relaxed mb-6">
+        <div className="bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-2xl p-8 mb-8 shadow-2xl">
+          <p className="text-[var(--text-secondary)] leading-relaxed mb-6">
             {session
-              ? `This area of the UptimeRobot Dashboard is restricted to administrative accounts only, ${session.user?.name || "user"}. If you believe this is a mistake, please verify your account permissions or contact your system administrator.`
-              : "This area of the UptimeRobot Dashboard is restricted to administrative accounts only. Please log in with an admin account to access this page or contact your system administrator."}
+              ? `This area of the UCC Dashboard is restricted to administrative accounts only, ${session.user?.name || "user"}. If you believe this is a mistake, please verify your account permissions or contact your system administrator.`
+              : "This area of the UCC Dashboard is restricted to administrative accounts only. Please log in with an admin account to access this page or contact your system administrator."}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <Link
               href="/websites"
-              className="flex-1 border border-zinc-800 flex items-center justify-center gap-2 px-6 py-3 bg-white text-black font-semibold rounded-xl hover:opacity-90 transition-all active:scale-95 cursor-pointer"
+              className="flex-1 border border-[var(--border-color)] flex items-center justify-center gap-2 px-6 py-3 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-semibold rounded-xl hover:bg-[var(--ukad-magenta-hover)] transition-all active:scale-95 cursor-pointer"
             >
               <LayoutDashboard className="w-5 h-5" />
               Return to Dashboard
@@ -47,10 +47,10 @@ export default function UnauthorizedPage() {
 
         {/* Meta Info */}
         <div className="flex flex-col items-center gap-2 opacity-50">
-          <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-mono uppercase tracking-widest">
+          <span className="px-3 py-1 bg-[var(--bg-subtle)] border border-[var(--border-color)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--text-secondary)]">
             Error 403: Forbidden
           </span>
-          <p className="text-xs text-zinc-400">Resource: {router.asPath}</p>
+          <p className="text-xs text-[var(--text-secondary)]">Resource: {router.asPath}</p>
         </div>
       </div>
     </div>

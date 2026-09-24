@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import MultiSelectDropdown from "@/components/MultiSelectDropdown";
@@ -269,24 +269,24 @@ const EditWebsite = () => {
       {/* Main Content */}
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         {/* Breadcrumb & Back */}
-        <nav className="flex items-center gap-2 text-sm text-zinc-500 mb-6">
+        <nav className="flex items-center gap-2 text-sm text-[var(--text-secondary)] mb-6">
           <Link
             href="/websites"
-            className="hover:text-zinc-300 flex items-center gap-1 transition-colors"
+            className="hover:text-[var(--text-secondary)] flex items-center gap-1 transition-colors"
           >
             <LayoutDashboard className="w-4 h-4" />
             Websites List
           </Link>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-zinc-200">
+          <span className="text-[var(--text-primary)]">
             {friendlyName || "Edit Monitor"}
           </span>
         </nav>
 
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 border-b border-zinc-900 pb-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 border-b border-[var(--border-color)] pb-6">
           <div>
-            <h1 className="text-3xl font-bold text-white">Edit Monitor</h1>
-            <p className="text-zinc-400 mt-1">
+            <h1 className="font-display text-3xl font-bold text-[var(--text-primary)]">Edit Monitor</h1>
+            <p className="text-[var(--text-secondary)] mt-1">
               {loading ? (
                 <span className="inline-flex items-center gap-2">
                   <Spinner />
@@ -295,7 +295,7 @@ const EditWebsite = () => {
               ) : (
                 <>
                   Modify monitoring settings for{" "}
-                  <span className="text-blue-400">{friendlyName}</span>
+                  <span className="text-[var(--accent-blue)]">{friendlyName}</span>
                 </>
               )}
             </p>
@@ -304,14 +304,14 @@ const EditWebsite = () => {
             <button
               onClick={handleCancel}
               disabled={loading || deleting}
-              className="px-4 py-2 rounded-lg border border-zinc-800 text-zinc-400 hover:bg-[var(--bg-elevated)] transition-all font-medium text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-full border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] transition-all font-medium text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={loading || deleting}
-              className="px-4 py-2 rounded-lg bg-white text-black hover:bg-zinc-200 transition-all font-semibold text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--ukad-magenta-hover)] transition-all font-semibold text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Changes
             </button>
@@ -321,7 +321,7 @@ const EditWebsite = () => {
         {/* Form Body */}
         <div className="space-y-8">
           {/* Section 1: Website Information */}
-          <section className="p-6 rounded-2xl bg-[var(--bg-deepest)] border border-zinc-800">
+          <section className="p-6 rounded-2xl bg-[var(--bg-deepest)] border border-[var(--border-color)]">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
                 <Globe className="w-5 h-5" />
@@ -331,7 +331,7 @@ const EditWebsite = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                   Display Name
                 </label>
                 <input
@@ -339,28 +339,28 @@ const EditWebsite = () => {
                   value={friendlyName}
                   onChange={(e) => setFriendlyName(e.target.value)}
                   disabled={loading}
-                  className="w-full bg-[var(--bg-elevated)] border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-lg px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder={loading ? "Loading..." : ""}
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                   Website URL
                 </label>
                 <div className="relative">
-                  <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4" />
+                  <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] w-4 h-4" />
                   <input
                     type="url"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     disabled={loading}
-                    className="w-full bg-[var(--bg-elevated)] border border-zinc-800 rounded-lg pl-11 pr-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-lg pl-11 pr-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder={loading ? "Loading..." : ""}
                   />
                 </div>
               </div>
               <div className="md:col-span-2 space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                   Keyword
                 </label>
                 <input
@@ -368,7 +368,7 @@ const EditWebsite = () => {
                   value={keywordValue}
                   onChange={(e) => setKeywordValue(e.target.value)}
                   disabled={loading}
-                  className="w-full bg-[var(--bg-elevated)] border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-lg px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder={
                     loading ? "Loading..." : "Text to monitor on the page"
                   }
@@ -377,12 +377,12 @@ const EditWebsite = () => {
                   data-lpignore="true"
                   data-form-type="other"
                 />
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-[var(--text-secondary)]">
                   Alert when this text is missing from the page response.
                 </p>
               </div>
               <div className="md:col-span-2 space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                   Group
                 </label>
                 <GroupAutocomplete
@@ -390,7 +390,7 @@ const EditWebsite = () => {
                   onChange={setSelectedGroup}
                   websiteId={website?.id || 0}
                 />
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-[var(--text-secondary)]">
                   Groups link related monitors so alerts for the same project are
                   batched into one Slack thread instead of separate messages per
                   site.
@@ -400,7 +400,7 @@ const EditWebsite = () => {
           </section>
 
           {/* Section 2: Alert Contacts */}
-          <section className="p-6 rounded-2xl bg-[var(--bg-deepest)] border border-zinc-800">
+          <section className="p-6 rounded-2xl bg-[var(--bg-deepest)] border border-[var(--border-color)]">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
                 <MessageSquare className="w-5 h-5" />
@@ -410,7 +410,7 @@ const EditWebsite = () => {
 
             <div className="space-y-8">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">
+                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-4">
                   Slack Channels
                 </label>
                 <MultiSelectDropdown
@@ -427,15 +427,15 @@ const EditWebsite = () => {
                   {selectedChannels.map((channelId) => (
                     <div
                       key={channelId}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800"
+                      className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border-color)]"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Hash className="w-4 h-4 text-zinc-400 shrink-0" />
+                        <Hash className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm font-medium truncate">
                             {getChannelNameById(channelId)}
                           </span>
-                          <span className="text-[10px] text-zinc-500">
+                          <span className="text-[10px] text-[var(--text-secondary)]">
                             Slack Channel
                           </span>
                         </div>
@@ -447,7 +447,7 @@ const EditWebsite = () => {
 
               <div>
                 <div className="flex items-center justify-between gap-3 mb-4">
-                  <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                     Individual Users
                   </label>
                   {deactivatedSelectedCount > 0 && (
@@ -480,13 +480,13 @@ const EditWebsite = () => {
                         className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border text-center ${
                           deactivated
                             ? "border-amber-500/40 bg-amber-500/5"
-                            : "border-zinc-800"
+                            : "border-[var(--border-color)]"
                         }`}
                       >
                         <button
                           type="button"
                           onClick={() => removeUser(userId)}
-                          className="absolute top-1.5 right-1.5 p-1 rounded-md text-zinc-500 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                          className="absolute top-1.5 right-1.5 p-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
                           aria-label={`Remove ${userName}`}
                           title="Remove"
                         >
@@ -496,7 +496,7 @@ const EditWebsite = () => {
                           className={`w-10 h-10 rounded-full border flex items-center justify-center font-semibold text-sm ${
                             deactivated
                               ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                              : "border-zinc-800 bg-[var(--bg-elevated)] text-white"
+                              : "border-[var(--border-color)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                           }`}
                         >
                           {userName.charAt(0).toUpperCase()}
@@ -518,7 +518,7 @@ const EditWebsite = () => {
           </section>
 
           {/* Section 3: Notification Preferences */}
-          <section className="p-6 rounded-2xl bg-[var(--bg-deepest)] border border-zinc-800">
+          <section className="p-6 rounded-2xl bg-[var(--bg-deepest)] border border-[var(--border-color)]">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                 <Bell className="w-5 h-5" />
@@ -529,14 +529,14 @@ const EditWebsite = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-900 bg-black">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-elevated)]">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
                     <TrendingDown className="w-5 h-5" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">Down Alerts</p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Send notification immediately when the monitor goes down.
                     </p>
                   </div>
@@ -548,20 +548,20 @@ const EditWebsite = () => {
                     onChange={(e) => setDownAlerts(e.target.checked)}
                     className="opacity-0 w-0 h-0 peer"
                   />
-                  <span className="absolute cursor-pointer inset-0 bg-[var(--bg-subtle)] rounded-full transition-colors peer-checked:bg-blue-500">
+                  <span className="absolute cursor-pointer inset-0 bg-[var(--bg-subtle)] rounded-full transition-colors peer-checked:bg-[var(--ukad-magenta)]">
                     <span className="absolute h-[18px] w-[18px] left-[3px] bottom-[3px] bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
                   </span>
                 </label>
               </div>
 
-              <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-900 bg-black">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-elevated)]">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
                     <TrendingUp className="w-5 h-5" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">Up Alerts</p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Notify when the service recovers and is back online.
                     </p>
                   </div>
@@ -573,20 +573,20 @@ const EditWebsite = () => {
                     onChange={(e) => setUpAlerts(e.target.checked)}
                     className="opacity-0 w-0 h-0 peer"
                   />
-                  <span className="absolute cursor-pointer inset-0 bg-[var(--bg-subtle)] rounded-full transition-colors peer-checked:bg-blue-500">
+                  <span className="absolute cursor-pointer inset-0 bg-[var(--bg-subtle)] rounded-full transition-colors peer-checked:bg-[var(--ukad-magenta)]">
                     <span className="absolute h-[18px] w-[18px] left-[3px] bottom-[3px] bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
                   </span>
                 </label>
               </div>
 
-              <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-900 bg-black">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-elevated)]">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
                     <Clock4 className="w-5 h-5" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">Latency Alerts</p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Notify if response time exceeds 2000ms for 3 consecutive
                       checks.
                     </p>
@@ -599,7 +599,7 @@ const EditWebsite = () => {
                     onChange={(e) => setLatencyAlerts(e.target.checked)}
                     className="opacity-0 w-0 h-0 peer"
                   />
-                  <span className="absolute cursor-pointer inset-0 bg-[var(--bg-subtle)] rounded-full transition-colors peer-checked:bg-blue-500">
+                  <span className="absolute cursor-pointer inset-0 bg-[var(--bg-subtle)] rounded-full transition-colors peer-checked:bg-[var(--ukad-magenta)]">
                     <span className="absolute h-[18px] w-[18px] left-[3px] bottom-[3px] bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
                   </span>
                 </label>
@@ -609,7 +609,7 @@ const EditWebsite = () => {
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-12 pt-8 border-t border-zinc-900 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+        <div className="mt-12 pt-8 border-t border-[var(--border-color)] flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
           <button
             onClick={handleDelete}
             disabled={deleting || loading}
@@ -622,14 +622,14 @@ const EditWebsite = () => {
             <button
               onClick={handleCancel}
               disabled={deleting}
-              className="flex-1 sm:flex-none px-8 py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:bg-[var(--bg-elevated)] transition-all font-medium text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-none px-8 py-3 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] transition-all font-medium text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={deleting}
-              className="flex-1 sm:flex-none px-8 py-3 rounded-xl bg-white text-black hover:bg-zinc-200 transition-all font-bold text-sm shadow-lg shadow-white/5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-none px-8 py-3 rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--ukad-magenta-hover)] transition-all font-bold text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Changes
             </button>

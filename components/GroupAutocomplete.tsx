@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { X, Loader2 } from "lucide-react";
@@ -127,7 +127,7 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
           data-bwignore="true"
           data-form-type="other"
           role="searchbox"
-          className="w-full bg-[var(--bg-elevated)] border border-zinc-800 rounded-lg px-4 py-3 pr-10 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all [&::-webkit-search-cancel-button]:hidden"
+          className="w-full bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-lg px-4 py-3 pr-10 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all [&::-webkit-search-cancel-button]:hidden"
           ref={inputRef}
           onBlur={handleBlur}
         />
@@ -135,7 +135,7 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
           <button
             type="button"
             onClick={() => setInputValue("")}
-            className="absolute inset-y-0 right-0 flex items-center justify-center px-3 text-zinc-400 hover:text-white transition-colors focus:outline-none"
+            className="absolute inset-y-0 right-0 flex items-center justify-center px-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus:outline-none"
             aria-label="Clear search"
           >
             <X className="h-4 w-4" />
@@ -143,10 +143,10 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
         )}
       </div>
       {(suggestions.length > 0 || loading || createOption) && (
-        <ul className="absolute bg-[var(--bg-elevated)] border border-zinc-800 text-sm z-10 w-full mt-2 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <ul className="absolute bg-[var(--bg-elevated)] border border-[var(--border-color)] text-sm z-10 w-full mt-2 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {loading ? (
             <li className="flex items-center justify-center p-3">
-              <Loader2 className="animate-spin h-5 w-5 text-zinc-400" />
+              <Loader2 className="animate-spin h-5 w-5 text-[var(--text-secondary)]" />
             </li>
           ) : (
             <>
@@ -154,7 +154,7 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
                 <li
                   key={group._id}
                   onMouseDown={() => handleSelect(group)}
-                  className="px-4 py-2.5 hover:bg-[var(--bg-subtle)] cursor-pointer text-white transition-colors first:rounded-t-lg last:rounded-b-lg"
+                  className="px-4 py-2.5 hover:bg-[var(--bg-subtle)] cursor-pointer text-[var(--text-primary)] transition-colors first:rounded-t-lg last:rounded-b-lg"
                 >
                   {group.name}
                 </li>
@@ -162,7 +162,7 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
               {createOption && (
                 <li
                   onMouseDown={handleCreateNew}
-                  className="px-4 py-2.5 hover:bg-[var(--bg-subtle)] cursor-pointer text-blue-400 transition-colors border-t border-zinc-800 last:rounded-b-lg"
+                  className="px-4 py-2.5 hover:bg-[var(--bg-subtle)] cursor-pointer text-blue-400 transition-colors border-t border-[var(--border-color)] last:rounded-b-lg"
                 >
                   Create "{inputValue}"
                 </li>
@@ -173,15 +173,15 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
       )}
       {value && (
         <div className="mt-3">
-          <div className="inline-flex items-center gap-2 bg-[var(--bg-subtle)] border border-zinc-700 rounded-lg px-3 py-2">
-            <span className="text-sm text-white">{value.name}</span>
+          <div className="inline-flex items-center gap-2 bg-[var(--bg-subtle)] border border-[var(--border-color)] rounded-lg px-3 py-2">
+            <span className="text-sm text-[var(--text-primary)]">{value.name}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onChange(null);
                 setInputValue("");
               }}
-              className="text-zinc-400 hover:text-white transition-colors focus:outline-none"
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus:outline-none"
               aria-label="Clear selected group"
             >
               <X className="h-3.5 w-3.5" />

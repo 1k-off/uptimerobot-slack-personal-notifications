@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -264,32 +264,32 @@ export default function AdminAuditPage() {
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight mb-1">
+          <h1 className="font-display text-2xl font-semibold tracking-tight mb-1">
             Audit log
           </h1>
-          <p className="text-sm text-zinc-400 flex items-center gap-2">
+          <p className="text-sm text-[var(--text-secondary)] flex items-center gap-2">
             <Info className="w-4 h-4 text-amber-500 shrink-0" />
             Who created, updated, or deleted monitors. Existing sites without
             an actor show as <span className="font-mono">system</span>.
           </p>
         </header>
 
-        <section className="bg-[var(--bg-elevated)] border border-zinc-800 rounded-xl p-4 mb-6">
+        <section className="bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-xl p-4 mb-6">
           <div className="flex flex-col lg:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] w-4 h-4" />
               <input
                 type="text"
                 placeholder="Search actor, URL, name, or ID…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-9 py-2 border border-zinc-800 rounded-lg bg-[var(--bg-deepest)] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full pl-9 pr-9 py-2 border border-[var(--border-color)] rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] text-sm focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--ukad-magenta)_25%,transparent)]"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
                   aria-label="Clear search"
                 >
                   <X className="w-4 h-4" />
@@ -300,7 +300,7 @@ export default function AdminAuditPage() {
             <select
               value={websiteIdFilter}
               onChange={(e) => setWebsiteIdFilter(e.target.value)}
-              className="lg:w-64 border border-zinc-800 rounded-lg bg-[var(--bg-deepest)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="lg:w-64 border border-[var(--border-color)] rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--ukad-magenta)_25%,transparent)]"
             >
               <option value="">All websites</option>
               {monitors.map((monitor) => (
@@ -313,7 +313,7 @@ export default function AdminAuditPage() {
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              className="lg:w-40 border border-zinc-800 rounded-lg bg-[var(--bg-deepest)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="lg:w-40 border border-[var(--border-color)] rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--ukad-magenta)_25%,transparent)]"
             >
               <option value="">All actions</option>
               <option value="created">Created</option>
@@ -323,15 +323,15 @@ export default function AdminAuditPage() {
           </div>
         </section>
 
-        <section className="bg-[var(--bg-elevated)] border border-zinc-800 rounded-xl overflow-hidden">
+        <section className="bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-xl overflow-hidden">
           {loading ? (
-            <div className="px-6 py-12 text-center text-zinc-400">
+            <div className="px-6 py-12 text-center text-[var(--text-secondary)]">
               Loading audit log…
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-[var(--bg-deepest)] text-[10px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                <thead className="bg-[var(--bg-deepest)] text-[10px] uppercase tracking-wider text-[var(--text-secondary)] border-b border-[var(--border-color)]">
                   <tr>
                     <th className="px-4 py-3 font-bold">Timestamp</th>
                     <th className="px-4 py-3 font-bold">Action</th>
@@ -353,7 +353,7 @@ export default function AdminAuditPage() {
                             {dateStr}, {timeStr}
                           </div>
                           {label && (
-                            <div className="text-zinc-500 text-xs">{label}</div>
+                            <div className="text-[var(--text-secondary)] text-xs">{label}</div>
                           )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -367,7 +367,7 @@ export default function AdminAuditPage() {
                             <div className="font-medium text-sm truncate max-w-[16rem]">
                               {item.url || item.name || `Website ${item.websiteId}`}
                             </div>
-                            <div className="text-xs text-zinc-500">
+                            <div className="text-xs text-[var(--text-secondary)]">
                               ID: {item.websiteId}
                             </div>
                           </Link>
@@ -377,7 +377,7 @@ export default function AdminAuditPage() {
                             {item.actor || "system"}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-zinc-300">
+                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
                           {formatDetails(item)}
                         </td>
                       </tr>
@@ -387,7 +387,7 @@ export default function AdminAuditPage() {
                     <tr>
                       <td
                         colSpan={5}
-                        className="px-6 py-12 text-center text-zinc-500"
+                        className="px-6 py-12 text-center text-[var(--text-secondary)]"
                       >
                         No audit events found
                       </td>
@@ -399,7 +399,7 @@ export default function AdminAuditPage() {
           )}
 
           {totalCount > 0 && (
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-zinc-800 text-sm text-zinc-400">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-[var(--border-color)] text-sm text-[var(--text-secondary)]">
               <span>
                 {(currentPage - 1) * itemsPerPage + 1}–
                 {Math.min(currentPage * itemsPerPage, totalCount)} of{" "}
@@ -410,7 +410,7 @@ export default function AdminAuditPage() {
                   type="button"
                   disabled={currentPage <= 1}
                   onClick={() => goToPage(currentPage - 1)}
-                  className="p-1.5 rounded-md border border-zinc-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-[var(--bg-subtle)]"
+                  className="p-1.5 rounded-md border border-[var(--border-color)] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-[var(--bg-subtle)]"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -421,7 +421,7 @@ export default function AdminAuditPage() {
                   type="button"
                   disabled={currentPage >= totalPages}
                   onClick={() => goToPage(currentPage + 1)}
-                  className="p-1.5 rounded-md border border-zinc-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-[var(--bg-subtle)]"
+                  className="p-1.5 rounded-md border border-[var(--border-color)] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-[var(--bg-subtle)]"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>

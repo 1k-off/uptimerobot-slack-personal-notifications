@@ -3,12 +3,19 @@ import '@/styles/globals.css';
 import { SessionProvider } from 'next-auth/react';
 import type { AppProps } from 'next/app';
 import type { Session } from 'next-auth';
-import { Inter } from 'next/font/google';
+import { Open_Sans, Unbounded } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 
-const inter = Inter({ 
-  subsets: ['latin'],
-  variable: '--font-inter',
+const openSans = Open_Sans({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-open-sans',
+  display: 'swap',
+});
+
+const unbounded = Unbounded({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-unbounded',
+  display: 'swap',
 });
 
 interface MyAppProps extends AppProps {
@@ -20,7 +27,7 @@ interface MyAppProps extends AppProps {
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }: MyAppProps) {
   return (
-    <div className={`${inter.variable} font-sans`}>
+    <div className={`${openSans.variable} ${unbounded.variable} font-sans`}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
         <SessionProvider session={session}>
           <Component {...pageProps} />

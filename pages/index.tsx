@@ -1,5 +1,6 @@
 import { signIn, useSession } from "next-auth/react";
 import Websites from "./websites";
+import Logo from "@/components/Logo";
 
 const HomePage = () => {
   const { data: session, status } = useSession();
@@ -7,7 +8,7 @@ const HomePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-radial flex items-center justify-center text-[var(--text-secondary)]">
         Loading...
       </div>
     );
@@ -18,42 +19,49 @@ const HomePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6">
-      {/* Header Title */}
-      <div className="mb-10 text-center">
-        <h1 className="font-display text-5xl md:text-6xl font-extrabold tracking-tight mb-2">
+    <div className="min-h-screen bg-gradient-radial flex flex-col items-center justify-center p-6">
+      <div className="mb-10 text-center animate-slide-up">
+        <div className="flex justify-center mb-6">
+          <Logo size="lg" variant="icon" />
+        </div>
+        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight mb-3 text-[var(--text-primary)]">
           UCC Dashboard
         </h1>
+        <p className="text-[var(--text-secondary)] text-sm md:text-base max-w-md mx-auto">
+          Monitor uptime and route Slack alerts for your sites.
+        </p>
       </div>
 
-      {/* Simplified Login Card */}
-      <main className="w-full max-w-[480px] glass-card rounded-3xl p-12 transition-all duration-300">
-        <div className="text-center mb-10">
-          <h2 className="text-xl font-semibold">Sign in</h2>
+      <main className="w-full max-w-[440px] glass-card rounded-3xl p-10 md:p-12 transition-all duration-300 animate-slide-up animation-delay-100">
+        <div className="text-center mb-8">
+          <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">
+            Sign in
+          </h2>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+            Use your Microsoft work account
+          </p>
         </div>
 
-        {/* Azure AD Login Action */}
-        <div className="flex flex-col items-center">
-          <button
-            id="login-azure-ad-btn"
-            onClick={() => signIn("azure-ad")}
-            className="btn-azure group cursor-pointer flex flex-col items-center justify-center p-8 rounded-2xl border border-transparent hover:border-zinc-800 bg-[var(--bg-elevated)]/40 w-full transition-all"
+        <button
+          id="login-azure-ad-btn"
+          onClick={() => signIn("azure-ad")}
+          className="btn-azure group cursor-pointer flex flex-col items-center justify-center p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-subtle)]/60 w-full transition-all"
+        >
+          <svg
+            className="w-11 h-11 mb-4"
+            viewBox="0 0 23 23"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden
           >
-            <svg
-              className="w-12 h-12 mb-4"
-              viewBox="0 0 23 23"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path fill="#f35325" d="M1 1h10v10H1z" />
-              <path fill="#81bc06" d="M12 1h10v10H12z" />
-              <path fill="#05a6f0" d="M1 12h10v10H1z" />
-              <path fill="#ffba08" d="M12 12h10v10H12z" />
-            </svg>
-            <span className="text-sm transition-colors">
-              Click to authenticate with Microsoft
-            </span>
-          </button>
-        </div>
+            <path fill="#f35325" d="M1 1h10v10H1z" />
+            <path fill="#81bc06" d="M12 1h10v10H12z" />
+            <path fill="#05a6f0" d="M1 12h10v10H1z" />
+            <path fill="#ffba08" d="M12 12h10v10H12z" />
+          </svg>
+          <span className="text-sm font-medium text-[var(--text-primary)]">
+            Continue with Microsoft
+          </span>
+        </button>
       </main>
     </div>
   );

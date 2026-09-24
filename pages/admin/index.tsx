@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -165,12 +165,12 @@ export default function AdminPage() {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
         {/* Page Header */}
         <div className="mb-5">
-          <h1 className="text-xl font-semibold tracking-tight">Admin</h1>
+          <h1 className="font-display text-xl font-semibold tracking-tight">Admin</h1>
         </div>
 
         {/* System Metrics/Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-          <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800">
+          <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)]">
             <div className="flex justify-between items-start mb-2">
               <Activity className="w-5 h-5 text-blue-500" />
               <span className="text-[10px] font-bold text-blue-500 uppercase">
@@ -188,7 +188,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800">
+          <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)]">
             <div className="flex justify-between items-start mb-2">
               <Bell className="w-5 h-5 text-amber-500" />
               <span className="text-[10px] font-bold text-amber-500 uppercase">
@@ -220,7 +220,7 @@ export default function AdminPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
           {/* Slack Integration Test */}
-          <section className="p-5 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800 h-full flex flex-col">
+          <section className="p-5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)] h-full flex flex-col">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="p-1.5 bg-blue-500/10 rounded-lg">
                 <Send className="w-4 h-4 text-blue-500" />
@@ -230,7 +230,7 @@ export default function AdminPage() {
 
             <div className="space-y-4 flex-1 flex flex-col">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
                   Target Channels
                 </label>
                 <MultiSelectDropdown
@@ -244,7 +244,7 @@ export default function AdminPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
                   Target Users
                 </label>
                 <MultiSelectDropdown
@@ -259,7 +259,7 @@ export default function AdminPage() {
               </div>
 
               <div className="space-y-2 flex-1 flex flex-col">
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
                   Message Content
                 </label>
                 <textarea
@@ -267,7 +267,7 @@ export default function AdminPage() {
                   rows={3}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full flex-1 min-h-[5.5rem] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                  className="w-full flex-1 min-h-[5.5rem] border border-[var(--border-color)] rounded-lg bg-[var(--bg-elevated)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--ukad-magenta)] resize-none"
                 />
               </div>
 
@@ -279,7 +279,7 @@ export default function AdminPage() {
                 <button
                   onClick={handleTestSlackMessage}
                   disabled={loading}
-                  className="px-5 py-2 bg-white text-black text-sm font-semibold rounded-lg hover:bg-gray-200 transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  className="px-5 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-sm font-semibold rounded-full hover:bg-[var(--ukad-magenta-hover)] transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                 >
                   {loading ? "Sending..." : "Send Test Message"}
                   <ArrowRight className="w-4 h-4" />
@@ -298,7 +298,7 @@ export default function AdminPage() {
             </div>
           </section>
 
-          <section className="p-5 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800 h-full flex flex-col">
+          <section className="p-5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)] h-full flex flex-col">
             <div className="flex items-center gap-2.5 mb-3">
               <div className="p-1.5 bg-amber-500/10 rounded-lg shrink-0">
                 <UserMinus className="w-4 h-4 text-amber-500" />
@@ -307,7 +307,7 @@ export default function AdminPage() {
                 <h2 className="text-base font-semibold">
                   Subscription maintenance
                 </h2>
-                <p className="text-xs text-zinc-400 mt-0.5">
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                   Remove deactivated Slack users from all monitor alert
                   contacts. Does not affect message cleanup.
                 </p>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
 import { Sun, Moon, Menu, X, ChevronDown } from "lucide-react";
@@ -18,16 +18,16 @@ interface HeaderProps {
 
 function navLinkClass(active: boolean, mobile = false): string {
   const base =
-    "rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-color)]";
+    "rounded-full text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--ukad-magenta)_40%,transparent)]";
 
   if (mobile) {
     return active
-      ? `${base} bg-[var(--bg-subtle)] text-[var(--text-primary)] px-3 py-2`
+      ? `${base} bg-[color-mix(in_srgb,var(--ukad-magenta)_12%,transparent)] text-[var(--ukad-magenta)] px-3 py-2`
       : `${base} text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] px-3 py-2`;
   }
 
   return active
-    ? `${base} bg-[var(--bg-subtle)] text-[var(--text-primary)] px-3 py-1.5`
+    ? `${base} bg-[color-mix(in_srgb,var(--ukad-magenta)_12%,transparent)] text-[var(--ukad-magenta)] px-3 py-1.5`
     : `${base} text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] px-3 py-1.5`;
 }
 
@@ -48,7 +48,7 @@ export default function Header({ currentPage = "dashboard" }: HeaderProps) {
   }, []);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-[var(--border-color)] bg-[var(--bg-primary)]/80 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70">
+    <nav className="sticky top-0 z-50 w-full border-b border-[var(--border-color)] bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/75">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
@@ -78,7 +78,7 @@ export default function Header({ currentPage = "dashboard" }: HeaderProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="start"
-                  className="z-[100] min-w-[12rem] border-zinc-800 bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-lg"
+                  className="z-[100] min-w-[12rem] border-[var(--border-color)] bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-lg"
                 >
                   <DropdownMenuItem asChild>
                     <Link

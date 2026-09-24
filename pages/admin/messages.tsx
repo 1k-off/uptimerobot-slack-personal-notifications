@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -432,10 +432,10 @@ export default function AdminMessages() {
       <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10">
         {/* Page Header */}
         <header className="mb-10">
-          <h1 className="text-3xl font-bold mb-2 tracking-tight">
+          <h1 className="font-display text-3xl font-bold mb-2 tracking-tight">
             Notifications history
           </h1>
-          <p className="text-zinc-400 flex items-center gap-2">
+          <p className="text-[var(--text-secondary)] flex items-center gap-2">
             <Info className="w-4 h-4 text-amber-500" />
             Historical alert delivery records. Search by website ID, message ID,
             or channel.
@@ -443,22 +443,22 @@ export default function AdminMessages() {
         </header>
 
         {/* Filters Bar */}
-        <section className="bg-[var(--bg-elevated)] border border-zinc-800 rounded-2xl p-6 mb-8">
+        <section className="bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-2xl p-6 mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] w-5 h-5" />
               <input
                 type="text"
                 placeholder="Search by website ID, message ID, or channel..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-zinc-800 rounded-lg placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                className="w-full pl-10 pr-10 py-2.5 border border-[var(--border-color)] rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--ukad-magenta)_25%,transparent)] transition-all text-sm"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                   aria-label="Clear search"
                 >
                   <X className="w-4 h-4" />
@@ -495,18 +495,18 @@ export default function AdminMessages() {
           <div className="text-center py-12">
             <div className="flex items-center justify-center gap-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-              <span className="text-zinc-400 text-lg">Loading messages...</span>
+              <span className="text-[var(--text-secondary)] text-lg">Loading messages...</span>
             </div>
           </div>
         )}
 
         {/* History Table */}
         {!loading && (
-          <section className="bg-[var(--bg-elevated)] border border-zinc-800 rounded-2xl overflow-hidden">
+          <section className="bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-2xl overflow-hidden">
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-zinc-800 bg-white/5">
+                  <tr className="border-b border-[var(--border-color)] bg-white/5">
                     <th className="px-6 py-4 w-12">
                       <input
                         type="checkbox"
@@ -515,25 +515,25 @@ export default function AdminMessages() {
                           messages.length > 0
                         }
                         onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="w-4 h-4 rounded border-zinc-800 text-blue-500 focus:ring-blue-500"
+                        className="w-4 h-4 rounded border-[var(--border-color)] text-blue-500 focus:ring-blue-500"
                       />
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                       Timestamp
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                       Monitor
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                       Type
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                       Target
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                       Message ID
                     </th>
                     <th className="px-6 py-4 text-right"></th>
@@ -558,7 +558,7 @@ export default function AdminMessages() {
                             onChange={(e) =>
                               handleSelectMessage(message._id, e.target.checked)
                             }
-                            className="w-4 h-4 rounded border-zinc-800 text-blue-500 focus:ring-blue-500"
+                            className="w-4 h-4 rounded border-[var(--border-color)] text-blue-500 focus:ring-blue-500"
                           />
                         </td>
                         <td className="px-6 py-4 text-sm whitespace-nowrap">
@@ -566,7 +566,7 @@ export default function AdminMessages() {
                             {dateStr}, {timeStr}
                           </div>
                           {label && (
-                            <div className="text-zinc-400 text-xs">{label}</div>
+                            <div className="text-[var(--text-secondary)] text-xs">{label}</div>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -579,7 +579,7 @@ export default function AdminMessages() {
                                 message.websiteName ||
                                 `Website ${message.websiteId}`}
                             </span>
-                            <div className="text-xs text-zinc-400">
+                            <div className="text-xs text-[var(--text-secondary)]">
                               ID: {message.websiteId}
                             </div>
                           </Link>
@@ -590,9 +590,9 @@ export default function AdminMessages() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             {isSlackChannelId(message.channelId) ? (
-                              <Hash className="w-4 h-4 text-zinc-400 shrink-0" />
+                              <Hash className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
                             ) : (
-                              <AtSign className="w-4 h-4 text-zinc-400 shrink-0" />
+                              <AtSign className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
                             )}
                             <span
                               className="text-sm"
@@ -611,7 +611,7 @@ export default function AdminMessages() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm text-zinc-400 truncate font-mono max-w-[200px]">
+                          <p className="text-sm text-[var(--text-secondary)] truncate font-mono max-w-[200px]">
                             {message.messageId}
                           </p>
                         </td>
@@ -619,7 +619,7 @@ export default function AdminMessages() {
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => handleDeleteMessage(message._id)}
-                              className="p-2 hover:bg-red-500/10 rounded-lg text-zinc-400 hover:text-red-500 transition-all cursor-pointer"
+                              className="p-2 hover:bg-red-500/10 rounded-lg text-[var(--text-secondary)] hover:text-red-500 transition-all cursor-pointer"
                               title="Delete Message"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -633,7 +633,7 @@ export default function AdminMessages() {
                     <tr>
                       <td
                         colSpan={8}
-                        className="px-6 py-12 text-center text-zinc-500"
+                        className="px-6 py-12 text-center text-[var(--text-secondary)]"
                       >
                         {searchQuery
                           ? "No messages found matching your search."
@@ -647,8 +647,8 @@ export default function AdminMessages() {
 
             {/* Pagination / Footer */}
             {totalPages > 1 && (
-              <div className="px-6 py-6 border-t border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-4">
-                <p className="text-xs text-zinc-400">
+              <div className="px-6 py-6 border-t border-[var(--border-color)] flex flex-col md:flex-row items-center justify-between gap-4">
+                <p className="text-xs text-[var(--text-secondary)]">
                   Showing{" "}
                   <span className="font-medium">
                     {startIndex + 1}-{endIndex}
@@ -661,7 +661,7 @@ export default function AdminMessages() {
                   <button
                     onClick={handlePreviousPage}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 text-sm font-medium border border-zinc-800 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="px-4 py-2 text-sm font-medium border border-[var(--border-color)] rounded-lg hover:bg-[var(--bg-subtle)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -674,8 +674,8 @@ export default function AdminMessages() {
                           onClick={() => handlePageClick(page)}
                           className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm font-bold transition-colors cursor-pointer ${
                             currentPage === page
-                              ? "bg-white text-black"
-                              : "hover:bg-white/5 text-zinc-400"
+                              ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]"
+                              : "hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"
                           }`}
                         >
                           {page}
@@ -684,13 +684,13 @@ export default function AdminMessages() {
                     })}
                     {totalPages > 5 && (
                       <>
-                        <span className="px-2 text-zinc-400">...</span>
+                        <span className="px-2 text-[var(--text-secondary)]">...</span>
                         <button
                           onClick={() => handlePageClick(totalPages)}
                           className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm transition-colors cursor-pointer ${
                             currentPage === totalPages
-                              ? "bg-white text-black font-bold"
-                              : "hover:bg-white/5 text-zinc-400"
+                              ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold"
+                              : "hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"
                           }`}
                         >
                           {totalPages}
@@ -701,7 +701,7 @@ export default function AdminMessages() {
                   <button
                     onClick={handleNextPage}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 text-sm font-medium border border-zinc-800 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="px-4 py-2 text-sm font-medium border border-[var(--border-color)] rounded-lg hover:bg-[var(--bg-subtle)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>

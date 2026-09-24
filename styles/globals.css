@@ -4,84 +4,99 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ================================
-   UptimeRobot Dashboard Design System
+   UCC Dashboard — UKAD-inspired design system
+   Brand refs: https://ukad-group.com
+   Primary #dd1556 · Secondary #21315e
+   Fonts: Unbounded (display) · Open Sans (body)
    ================================ */
 
 /* Light Mode (Default) */
 :root {
-  /* Design System Colors - Light Mode */
-  --bg-primary: #f4f4f5;
+  --ukad-magenta: #dd1556;
+  --ukad-magenta-hover: #a41342;
+  --ukad-navy: #21315e;
+  --ukad-navy-soft: #304fa4;
+  --ukad-sky: #ecf1fd;
+  --ukad-sky-deep: #c5d4f8;
+  --ukad-mist: #f3f7ff;
+
+  --bg-primary: #f3f7ff;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
   --bg-elevated: #ffffff;
-  --bg-subtle: #e4e4e7;
-  --bg-deepest: #fafafa;
-  --text-primary: #18181b;
-  --text-secondary: #71717a;
-  --border-color: #e4e4e7;
-  --btn-primary-bg: #18181b;
+  --bg-subtle: #ecf1fd;
+  --bg-deepest: #e8eefc;
+  --text-primary: #21315e;
+  --text-secondary: #828aa0;
+  --border-color: #d3d9e9;
+  --btn-primary-bg: #dd1556;
   --btn-primary-text: #ffffff;
-  --accent-danger: #dc2626;
+  --accent-danger: #dd1556;
   --accent-green: #16a34a;
-  --accent-blue: #2563eb;
-  
-  /* Tailwind compatibility variables */
-  --background: #f4f4f5;
-  --foreground: #18181b;
+  --accent-blue: #304fa4;
+  --accent-brand: #dd1556;
+
+  --background: #f3f7ff;
+  --foreground: #21315e;
   --card: #ffffff;
-  --card-foreground: #18181b;
-  --primary: #18181b;
+  --card-foreground: #21315e;
+  --primary: #dd1556;
   --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #2563eb;
+  --secondary: #ecf1fd;
+  --secondary-foreground: #21315e;
+  --muted: #ecf1fd;
+  --muted-foreground: #828aa0;
+  --accent: #304fa4;
   --accent-foreground: #ffffff;
-  --destructive: #dc2626;
+  --destructive: #dd1556;
   --destructive-foreground: #ffffff;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #2563eb;
-  --radius: 0.5rem;
+  --border: #d3d9e9;
+  --input: #d3d9e9;
+  --ring: #dd1556;
+  --radius: 0.75rem;
+
+  --shadow-soft: 0 8px 30px rgba(33, 49, 94, 0.08);
+  --shadow-card: 0 4px 24px rgba(33, 49, 94, 0.06);
 }
 
-/* Dark Mode */
+/* Dark Mode — navy-tinted surfaces, same brand accents */
 .dark {
-  /* Design System Colors - Dark Mode */
-  --bg-primary: #000000;
-  --bg-secondary: #0a0a0a;
-  --bg-card: #141414;
-  --bg-elevated: #18181b;
-  --bg-subtle: #27272a;
-  --bg-deepest: #09090b;
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
-  --border-color: #27272a;
-  --btn-primary-bg: #ffffff;
-  --btn-primary-text: #000000;
-  --accent-danger: #b91c1c;
-  --accent-green: #22c55e;
-  --accent-blue: #3b82f6;
-  
-  /* Tailwind compatibility variables */
-  --background: #000000;
-  --foreground: #ffffff;
-  --card: #141414;
-  --card-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #000000;
-  --secondary: #0a0a0a;
-  --secondary-foreground: #ffffff;
-  --muted: #0a0a0a;
-  --muted-foreground: #a1a1aa;
-  --accent: #3b82f6;
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1526;
+  --bg-card: #141b2d;
+  --bg-elevated: #171f33;
+  --bg-subtle: #1e2944;
+  --bg-deepest: #0c1222;
+  --text-primary: #f3f7ff;
+  --text-secondary: #9fb0d0;
+  --border-color: #2a3555;
+  --btn-primary-bg: #dd1556;
+  --btn-primary-text: #ffffff;
+  --accent-danger: #f04a7a;
+  --accent-green: #34d399;
+  --accent-blue: #5473c8;
+  --accent-brand: #dd1556;
+
+  --background: #0a0e1a;
+  --foreground: #f3f7ff;
+  --card: #141b2d;
+  --card-foreground: #f3f7ff;
+  --primary: #dd1556;
+  --primary-foreground: #ffffff;
+  --secondary: #171f33;
+  --secondary-foreground: #f3f7ff;
+  --muted: #171f33;
+  --muted-foreground: #9fb0d0;
+  --accent: #5473c8;
   --accent-foreground: #ffffff;
-  --destructive: #b91c1c;
+  --destructive: #f04a7a;
   --destructive-foreground: #ffffff;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #3b82f6;
+  --border: #2a3555;
+  --input: #2a3555;
+  --ring: #dd1556;
+
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 
 /* ================================
@@ -92,12 +107,20 @@
   * {
     border-color: var(--border-color);
   }
-  
+
   body {
     @apply bg-[var(--bg-primary)] text-[var(--text-primary)];
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-open-sans), "Open Sans", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-unbounded), Unbounded, system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 }
 
@@ -105,44 +128,46 @@
    Animations & Keyframes
    ================================ */
 
-/* Status pulse animations */
 @keyframes pulse-green {
-  0%, 100% { 
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); 
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
   }
-  50% { 
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); 
+  50% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
   }
 }
 
 @keyframes pulse-red {
-  0%, 100% { 
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); 
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(221, 21, 86, 0.7);
   }
-  50% { 
-    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); 
+  50% {
+    box-shadow: 0 0 0 8px rgba(221, 21, 86, 0);
   }
 }
 
 @keyframes pulse-green-dark {
-  0%, 100% { 
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); 
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5);
   }
-  50% { 
-    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); 
+  50% {
+    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
   }
 }
 
 @keyframes pulse-red-dark {
-  0%, 100% { 
-    box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.5); 
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(240, 74, 122, 0.5);
   }
-  50% { 
-    box-shadow: 0 0 0 8px rgba(185, 28, 28, 0); 
+  50% {
+    box-shadow: 0 0 0 8px rgba(240, 74, 122, 0);
   }
 }
 
-/* Slide up animation */
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -154,7 +179,6 @@
   }
 }
 
-/* Modal scale in animation */
 @keyframes modalScaleIn {
   from {
     opacity: 0;
@@ -166,13 +190,12 @@
   }
 }
 
-/* Overlay fade in animation */
 @keyframes overlayFadeIn {
-  from { 
-    opacity: 0; 
+  from {
+    opacity: 0;
   }
-  to { 
-    opacity: 1; 
+  to {
+    opacity: 1;
   }
 }
 
@@ -180,7 +203,6 @@
    Utility Classes
    ================================ */
 
-/* Status pulse classes */
 .pulse-green {
   animation: pulse-green 2s infinite;
 }
@@ -197,7 +219,6 @@
   animation: pulse-red-dark 2s infinite;
 }
 
-/* Animation utilities */
 .animate-slide-up {
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -222,7 +243,6 @@
   animation: overlayFadeIn 0.4s ease-out;
 }
 
-/* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -241,66 +261,73 @@
   background: var(--text-secondary);
 }
 
-/* Gradient background */
 .bg-gradient-radial {
-  background: radial-gradient(
-    circle at center, 
-    rgba(59, 130, 246, 0.08) 0%, 
-    rgba(139, 92, 246, 0.05) 30%, 
-    transparent 70%
-  );
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      rgba(221, 21, 86, 0.1) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 100% 0%,
+      rgba(48, 79, 164, 0.12) 0%,
+      transparent 50%
+    ),
+    var(--bg-primary);
 }
 
 .dark .bg-gradient-radial {
-  background: radial-gradient(
-    circle at center, 
-    rgba(59, 130, 246, 0.12) 0%, 
-    rgba(139, 92, 246, 0.08) 30%, 
-    transparent 70%
-  );
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      rgba(221, 21, 86, 0.18) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 100% 0%,
+      rgba(84, 115, 200, 0.16) 0%,
+      transparent 50%
+    ),
+    var(--bg-primary);
 }
 
-/* Glass card effect */
 .glass-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
 }
 
 .dark .glass-card {
-  background: rgba(20, 20, 20, 0.8);
-  border: 1px solid rgba(39, 39, 42, 0.8);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
+  box-shadow: var(--shadow-soft);
 }
 
-/* Button styles */
 .btn-azure {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-azure:hover {
-  background-color: var(--bg-secondary);
-  border-color: var(--border-color);
-  transform: scale(1.02);
+  background-color: var(--bg-subtle);
+  border-color: var(--ukad-magenta);
+  transform: scale(1.01);
 }
 
 .btn-azure:active {
   transform: scale(0.98);
 }
 
-/* Typography utilities */
 .font-display {
-  font-family: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-unbounded), Unbounded, system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-/* Shared form controls — theme-aware */
 .ds-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   border: 1px solid var(--border-color);
   background: var(--bg-deepest);
   color: var(--text-primary);
@@ -314,22 +341,22 @@
 
 .ds-input:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--text-primary) 35%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ukad-magenta) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ukad-magenta) 18%, transparent);
 }
 
 .ds-btn-primary {
   padding: 0.625rem 2rem;
-  border-radius: 0.5rem;
+  border-radius: 9999px;
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
   font-size: 0.875rem;
   font-weight: 600;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: background-color 0.15s, transform 0.15s, opacity 0.15s;
 }
 
 .ds-btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
+  background: var(--ukad-magenta-hover);
 }
 
 .ds-btn-primary:active:not(:disabled) {
@@ -355,7 +382,7 @@
 
 .ds-btn-danger {
   padding: 0.625rem 2rem;
-  border-radius: 0.5rem;
+  border-radius: 9999px;
   background: var(--accent-danger);
   color: #ffffff;
   font-size: 0.875rem;
@@ -376,9 +403,8 @@
   cursor: not-allowed;
 }
 
-/* Toggle switch */
 .peer:checked ~ span {
-  background-color: var(--accent-blue);
+  background-color: var(--ukad-magenta);
 }
 
 .peer:checked ~ span span {

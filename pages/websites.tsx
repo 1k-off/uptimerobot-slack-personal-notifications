@@ -331,10 +331,10 @@ const Websites = () => {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-1">
+              <h1 className="font-display text-3xl font-bold tracking-tight mb-1">
                 Websites List
               </h1>
-              <p className="text-zinc-400 font-medium">
+              <p className="text-[var(--text-secondary)] font-medium">
                 {statusFilter === "all" ? (
                   <>
                     <span className="">{allCount}</span> / {monitorQuota}{" "}
@@ -353,7 +353,7 @@ const Websites = () => {
             <button
               onClick={handleCreateMonitor}
               disabled={allCount >= monitorQuota}
-              className="flex items-center gap-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer lg:flex-shrink-0"
+              className="flex items-center gap-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] px-5 py-2.5 rounded-full font-medium hover:bg-[var(--ukad-magenta-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer lg:flex-shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span>Create Monitor</span>
@@ -670,8 +670,8 @@ const Websites = () => {
                       onClick={() => handlePageClick(totalPages)}
                       className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm transition-colors cursor-pointer ${
                         currentPage === totalPages
-                          ? "bg-white text-black font-bold"
-                          : "hover:bg-white/5 text-zinc-400"
+                          ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold"
+                          : "hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"
                       }`}
                     >
                       {totalPages}

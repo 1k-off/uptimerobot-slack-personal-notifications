@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -114,7 +114,7 @@ export default function MultiSelectDropdown({
         <Button
           ref={triggerRef}
           variant="outline"
-          className="w-full max-w-full justify-between border-zinc-800 bg-[var(--bg-deepest)] hover:bg-[var(--bg-subtle)]"
+              className="w-full max-w-full justify-between border-[var(--border-color)] bg-[var(--bg-elevated)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
         >
           <span className="truncate text-left">{displayValue}</span>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -122,12 +122,12 @@ export default function MultiSelectDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className="p-0 max-h-[min(22rem,50vh)] overflow-hidden bg-[var(--bg-elevated)] border-zinc-800"
+        className="p-0 max-h-[min(22rem,50vh)] overflow-hidden bg-[var(--bg-elevated)] border-[var(--border-color)]"
         style={{ width: menuWidth ? `${menuWidth}px` : undefined, minWidth: "16rem" }}
       >
-        <div className="sticky top-0 z-10 border-b border-zinc-800 bg-[var(--bg-elevated)] p-2">
+        <div className="sticky top-0 z-10 border-b border-[var(--border-color)] bg-[var(--bg-elevated)] p-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-secondary)]" />
             <input
               type="text"
               name={`filter-${selectedPlaceholder.replace(/\W+/g, "-")}`}
@@ -144,14 +144,14 @@ export default function MultiSelectDropdown({
               data-bwignore="true"
               data-form-type="other"
               role="searchbox"
-              className="w-full rounded-lg border border-zinc-800 bg-[var(--bg-deepest)] py-2 pl-9 pr-9 text-sm text-[var(--text-primary)] placeholder:text-zinc-500 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-deepest)] py-2 pl-9 pr-9 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               ref={inputRef}
             />
             {searchTerm ? (
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className="absolute inset-y-0 right-0 flex items-center justify-center px-2.5 text-zinc-400 transition-colors hover:text-[var(--text-primary)] focus:outline-none cursor-pointer"
+                className="absolute inset-y-0 right-0 flex items-center justify-center px-2.5 text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] focus:outline-none cursor-pointer"
                 aria-label="Clear search"
               >
                 <X className="h-4 w-4" />
@@ -163,7 +163,7 @@ export default function MultiSelectDropdown({
         <div className="max-h-[min(16rem,40vh)] overflow-y-auto p-1 custom-scrollbar">
           {loading ? (
             <div className="flex items-center justify-center px-4 py-6">
-              <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+              <Loader2 className="h-5 w-5 animate-spin text-[var(--text-secondary)]" />
             </div>
           ) : filteredItems.length > 0 ? (
             filteredItems.map((item) => {
@@ -183,7 +183,7 @@ export default function MultiSelectDropdown({
               );
             })
           ) : (
-            <div className="px-3 py-6 text-center text-sm text-zinc-500">
+            <div className="px-3 py-6 text-center text-sm text-[var(--text-secondary)]">
               {searchTerm
                 ? `No matches for “${searchTerm}”`
                 : `No ${selectedPlaceholder} found`}

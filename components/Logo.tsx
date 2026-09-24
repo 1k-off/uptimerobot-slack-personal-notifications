@@ -38,7 +38,7 @@ export default function Logo({ size = 'md', variant = 'full', className = '' }: 
     <div className={`flex items-center gap-2 ${className}`}>
       {icon}
       <span
-        className={`font-bold tracking-tight text-[var(--text-primary)] ${textSizes[size]}`}
+        className={`font-display font-semibold tracking-tight text-[var(--text-primary)] ${textSizes[size]}`}
       >
         UCC
       </span>
