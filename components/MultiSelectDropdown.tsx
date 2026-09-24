@@ -104,26 +104,37 @@ export default function MultiSelectDropdown({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="min-w-[400px] justify-between">
+        <Button variant="outline" className="w-full max-w-full justify-between">
           <span className="truncate">{displayValue}</span>
-          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 p-4 max-h-[33vh] min-h-[200px] overflow-y-auto bg-[var(--bg-elevated)] border-zinc-800">
-        <div className="relative">
+        <div className="relative mb-2">
           <input
-            type="text"
+            type="search"
+            name={`filter-${placeholder.toLowerCase().replace(/\s+/g, "-")}`}
             placeholder={`Search ${placeholder.toLowerCase()}...`}
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={(e) => e.stopPropagation()}
-            className="mb-2 w-full px-2 py-1 border border-zinc-800 bg-[var(--bg-deepest)] text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 pr-8 placeholder:text-zinc-500"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore="true"
+            data-form-type="other"
+            role="searchbox"
+            className="w-full px-2 py-1.5 border border-zinc-800 bg-[var(--bg-deepest)] text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 pr-8 placeholder:text-zinc-500 [&::-webkit-search-cancel-button]:hidden"
             ref={inputRef}
           />
           {searchTerm && (
             <button
+              type="button"
               onClick={handleClearSearch}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-white transition-colors focus:outline-none"
+              className="absolute inset-y-0 right-0 flex items-center justify-center px-2 text-zinc-400 hover:text-white transition-colors focus:outline-none"
               aria-label="Clear search"
             >
               <X className="h-4 w-4" />

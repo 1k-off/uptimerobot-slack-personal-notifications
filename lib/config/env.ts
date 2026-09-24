@@ -10,6 +10,8 @@ interface EnvConfig {
   slackChannelActionNotify: string[];
   slackPruneOldMessages: boolean;
   slackKeepMessagesSeconds: number;
+  /** When false, cleanup ignores time budget and drains until done (local use). Default true. */
+  slackCleanupTimeBudget: boolean;
 
   // UptimeRobot
   uptimeRobotApiKey: string;
@@ -87,6 +89,7 @@ function validateEnv(): EnvConfig {
     slackChannelActionNotify: parseEnvArray(process.env.SLACK_CHANNEL_ACTION_NOTIFY),
     slackPruneOldMessages: parseEnvBoolean(process.env.SLACK_PRUNE_OLD_MESSAGES, false),
     slackKeepMessagesSeconds: parseEnvNumber(process.env.SLACK_KEEP_MESSAGES_SECONDS, 120),
+    slackCleanupTimeBudget: parseEnvBoolean(process.env.SLACK_CLEANUP_TIME_BUDGET, true),
 
     // UptimeRobot
     uptimeRobotApiKey: required.UPTIMEROBOT_API_KEY!,

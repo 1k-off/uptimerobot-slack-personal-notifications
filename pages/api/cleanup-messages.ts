@@ -12,6 +12,7 @@ interface ApiResponse {
   processed?: number;
   remaining?: number;
   hasMore?: boolean;
+  retryAfterSeconds?: number;
   stoppedReason?: CleanupResult['stoppedReason'];
 }
 
@@ -58,6 +59,7 @@ export default async function handler(
       processed: result.processed,
       remaining: result.remaining,
       hasMore: result.hasMore,
+      retryAfterSeconds: result.retryAfterSeconds,
       stoppedReason: result.stoppedReason,
     });
   } catch (error) {

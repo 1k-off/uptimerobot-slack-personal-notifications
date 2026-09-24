@@ -108,9 +108,22 @@ const EditWebsite = () => {
   }, [id, queryFriendlyName, queryUrl]);
 
   const handleSave = async () => {
+    const activeUserIds = new Set(userOptions.map((u) => u.id));
+    const usersToSave =
+      userOptions.length > 0
+        ? selectedUsers.filter((id) => activeUserIds.has(id))
+        : selectedUsers;
+
+    if (usersToSave.length !== selectedUsers.length) {
+      setSelectedUsers(usersToSave);
+      toast.message(
+        `Removed ${selectedUsers.length - usersToSave.length} deactivated user(s) before save`,
+      );
+    }
+
     const alertContacts = {
       slack: {
-        users: selectedUsers,
+        users: usersToSave,
         channels: selectedChannels,
       },
     };
@@ -162,6 +175,24 @@ const EditWebsite = () => {
   const getUserNameById = (id: string): string => {
     const user = userOptions.find((u) => u.id === id);
     return user ? user.name : id;
+  };
+
+  const isDeactivatedUser = (id: string): boolean =>
+    userOptions.length > 0 && !userOptions.some((u) => u.id === id);
+
+  const deactivatedSelectedCount = selectedUsers.filter(isDeactivatedUser).length;
+
+  const removeUser = (userId: string) => {
+    setSelectedUsers((prev) => prev.filter((id) => id !== userId));
+  };
+
+  const removeDeactivatedUsers = () => {
+    const next = selectedUsers.filter((id) => !isDeactivatedUser(id));
+    const removed = selectedUsers.length - next.length;
+    setSelectedUsers(next);
+    if (removed > 0) {
+      toast.success(`Removed ${removed} deactivated user(s) from this monitor`);
+    }
   };
 
   const getChannelNameById = (id: string): string => {
@@ -356,14 +387,14 @@ const EditWebsite = () => {
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                   {selectedChannels.map((channelId) => (
-                    <label
+                    <div
                       key={channelId}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800 hover:border-zinc-700 cursor-pointer transition-all"
+                      className="flex items-center gap-3 p-3 rounded-xl border border-zinc-800"
                     >
-                      <div className="flex items-center gap-2 flex-1">
-                        <Hash className="w-4 h-4 text-zinc-400" />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Hash className="w-4 h-4 text-zinc-400 shrink-0" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-medium truncate">
                             {getChannelNameById(channelId)}
                           </span>
                           <span className="text-[10px] text-zinc-500">
@@ -371,15 +402,26 @@ const EditWebsite = () => {
                           </span>
                         </div>
                       </div>
-                    </label>
+                    </div>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">
-                  Individual Users
-                </label>
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                    Individual Users
+                  </label>
+                  {deactivatedSelectedCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={removeDeactivatedUsers}
+                      className="text-xs font-medium text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                    >
+                      Remove {deactivatedSelectedCount} deactivated
+                    </button>
+                  )}
+                </div>
                 <MultiSelectDropdown
                   apiEndpoint="/api/slackUsers"
                   placeholder="Select users..."
@@ -393,18 +435,43 @@ const EditWebsite = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                   {selectedUsers.map((userId) => {
                     const userName = getUserNameById(userId);
+                    const deactivated = isDeactivatedUser(userId);
                     return (
-                      <label
+                      <div
                         key={userId}
-                        className="flex flex-col items-center gap-2 p-3 rounded-xl border border-zinc-800 hover:border-zinc-700 cursor-pointer transition-all text-center"
+                        className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border text-center ${
+                          deactivated
+                            ? "border-amber-500/40 bg-amber-500/5"
+                            : "border-zinc-800"
+                        }`}
                       >
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-full border border-zinc-800 bg-[var(--bg-elevated)] flex items-center justify-center text-white font-semibold text-sm">
-                            {userName.charAt(0).toUpperCase()}
-                          </div>
+                        <button
+                          type="button"
+                          onClick={() => removeUser(userId)}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-md text-zinc-500 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                          aria-label={`Remove ${userName}`}
+                          title="Remove"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <div
+                          className={`w-10 h-10 rounded-full border flex items-center justify-center font-semibold text-sm ${
+                            deactivated
+                              ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                              : "border-zinc-800 bg-[var(--bg-elevated)] text-white"
+                          }`}
+                        >
+                          {userName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-xs font-medium">{userName}</span>
-                      </label>
+                        <span className="text-xs font-medium truncate w-full px-1">
+                          {userName}
+                        </span>
+                        {deactivated && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                            Deactivated
+                          </span>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

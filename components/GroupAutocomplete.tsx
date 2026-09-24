@@ -110,7 +110,8 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
       <div className="relative">
         <input
           id="group"
-          type="text"
+          type="search"
+          name="slack-group-filter"
           value={inputValue}
           onChange={(e) => {
             setInputValue(e.target.value);
@@ -118,14 +119,23 @@ const GroupAutocomplete = ({ value, onChange, websiteId }: GroupAutocompleteProp
           }}
           placeholder="Type to search or create a group..."
           autoComplete="off"
-          className="w-full bg-[var(--bg-elevated)] border border-zinc-800 rounded-lg px-4 py-3 pr-10 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          data-1p-ignore
+          data-lpignore="true"
+          data-bwignore="true"
+          data-form-type="other"
+          role="searchbox"
+          className="w-full bg-[var(--bg-elevated)] border border-zinc-800 rounded-lg px-4 py-3 pr-10 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all [&::-webkit-search-cancel-button]:hidden"
           ref={inputRef}
           onBlur={handleBlur}
         />
         {inputValue && (
           <button
+            type="button"
             onClick={() => setInputValue("")}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-white transition-colors focus:outline-none"
+            className="absolute inset-y-0 right-0 flex items-center justify-center px-3 text-zinc-400 hover:text-white transition-colors focus:outline-none"
             aria-label="Clear search"
           >
             <X className="h-4 w-4" />

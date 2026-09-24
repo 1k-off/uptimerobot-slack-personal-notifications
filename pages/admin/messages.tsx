@@ -149,7 +149,9 @@ export default function AdminMessages() {
       let totalSlackDeleted = 0;
       let remaining = 0;
       let rounds = 0;
-      const maxRounds = 200; // safety cap (~5k msgs at 25/batch)
+      const maxRounds = 2000;
+
+      toast.message("Cleanup started — this may take a while due to Slack rate limits…");
 
       while (rounds < maxRounds) {
         rounds++;
@@ -167,9 +169,22 @@ export default function AdminMessages() {
         totalSlackDeleted += data.slackDeleted ?? 0;
         remaining = data.remaining ?? 0;
 
+        if (rounds === 1 || rounds % 5 === 0) {
+          toast.message(
+            `Cleanup progress: ${totalProcessed} processed, ${remaining} remaining…`,
+          );
+        }
+
         if (!data.hasMore) {
           break;
         }
+
+        // Respect Slack retry-after between batches (admin loop was hammering the API)
+        const waitSec =
+          data.stoppedReason === "rate_limited"
+            ? Math.max(data.retryAfterSeconds ?? 10, 10)
+            : 1;
+        await new Promise((resolve) => setTimeout(resolve, waitSec * 1000));
       }
 
       if (remaining > 0) {

@@ -356,16 +356,16 @@ const Websites = () => {
                     : isDown
                       ? "border-red-500/30"
                       : "border-amber-500/30"
-                } rounded-2xl p-6 dark:hover:border-white/20 transition-all group`}
+                } rounded-2xl p-6 dark:hover:border-white/20 transition-all group flex flex-col h-full`}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div
                       className={`w-3 h-3 rounded-full flex-shrink-0 ${
                         isUp
-                          ? "bg-green-500 status-pulse-green"
+                          ? "bg-green-500 pulse-green"
                           : isDown
-                            ? "bg-red-500 status-pulse-red"
+                            ? "bg-red-500 pulse-red"
                             : isPaused
                               ? "bg-amber-500"
                               : "bg-zinc-500"
@@ -408,7 +408,7 @@ const Websites = () => {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="flex-1 space-y-4">
                   {/* Group info */}
                   {website.group && (
                     <div>
@@ -457,31 +457,31 @@ const Websites = () => {
                       </div>
                     </div>
                   )}
+                </div>
 
-                  <div className="pt-4 border-t border-zinc-800 flex items-center justify-between">
-                    <div className="text-xs text-zinc-400">
-                      {website.uptime_ratio !== undefined && (
-                        <span className="font-medium">
-                          Uptime: {website.uptime_ratio}%
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(website)}
-                        className="p-2 hover:bg-[var(--bg-subtle)] rounded-lg transition-colors cursor-pointer"
-                        title="Edit"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteMonitor(website)}
-                        className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors cursor-pointer"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                <div className="mt-auto pt-4 border-t border-zinc-800 flex items-center justify-between">
+                  <div className="text-xs text-zinc-400">
+                    {website.uptime_ratio !== undefined && (
+                      <span className="font-medium">
+                        Uptime: {website.uptime_ratio}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(website)}
+                      className="p-2 hover:bg-[var(--bg-subtle)] rounded-lg transition-colors cursor-pointer"
+                      title="Edit"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMonitor(website)}
+                      className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors cursor-pointer"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>

@@ -15,6 +15,7 @@ import {
   Lock,
   ExternalLink,
   Search,
+  UserMinus,
 } from "lucide-react";
 import { Session } from "@/types";
 import Header from "@/components/Header";
@@ -60,6 +61,7 @@ export default function AdminPage() {
     recentMessages: 0,
   });
   const [metricsLoading, setMetricsLoading] = useState(true);
+  const [pruneLoading, setPruneLoading] = useState(false);
 
   useEffect(() => {
     fetchChannels();
@@ -152,6 +154,42 @@ export default function AdminPage() {
       console.error("Error sending test Slack message:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePruneDeactivatedUsers = async () => {
+    if (
+      !window.confirm(
+        "Remove deactivated Slack users from all monitor subscriptions? This only updates the database; message cleanup is not affected.",
+      )
+    ) {
+      return;
+    }
+
+    setPruneLoading(true);
+    try {
+      const response = await fetch("/api/admin/prune-deactivated-users", {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Failed to prune deactivated users");
+        return;
+      }
+
+      if (data.usersRemoved === 0) {
+        toast.success("No deactivated users found in subscriptions");
+      } else {
+        toast.success(
+          `Removed ${data.usersRemoved} deactivated user(s) from ${data.websitesUpdated} monitor(s)`,
+        );
+      }
+    } catch (error) {
+      console.error("Failed to prune deactivated users:", error);
+      toast.error("Failed to prune deactivated users");
+    } finally {
+      setPruneLoading(false);
     }
   };
 
@@ -365,6 +403,29 @@ export default function AdminPage() {
                   </Alert>
                 )}
               </div>
+            </section>
+
+            <section className="p-8 rounded-2xl bg-[var(--bg-elevated)] border border-zinc-800">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-amber-500/10 rounded-lg">
+                  <UserMinus className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Subscription maintenance</h2>
+                  <p className="text-sm text-zinc-400 mt-1">
+                    Remove deactivated Slack users from all monitor alert
+                    contacts. Does not affect message cleanup.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handlePruneDeactivatedUsers}
+                disabled={pruneLoading}
+                className="px-6 py-3 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold rounded-lg hover:bg-amber-500/20 transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {pruneLoading ? "Pruning..." : "Prune deactivated users"}
+              </button>
             </section>
           </div>
 
