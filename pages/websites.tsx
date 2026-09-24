@@ -571,7 +571,9 @@ const Websites = () => {
                   )}
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-[var(--border-color)] flex items-center justify-between gap-3">
+                <div className="mt-auto flex flex-col gap-4 pt-4">
+                  <div className="border-t border-[var(--border-color)]" />
+                  <div className="flex items-center justify-between gap-3">
                   <div className="text-xs text-[var(--text-secondary)] min-w-0">
                     <span className="text-[var(--text-secondary)]">Added by </span>
                     <span
@@ -596,6 +598,7 @@ const Websites = () => {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                  </div>
                   </div>
                 </div>
               </div>
