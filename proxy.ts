@@ -5,13 +5,19 @@ import type { NextRequest } from 'next/server';
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
+    // Static files from /public (logo, favicons, etc.) must bypass auth
+    const isStaticAsset =
+        /\.(?:png|jpe?g|gif|svg|webp|ico|txt|xml|json|woff2?|ttf|eot|map)$/i.test(
+            pathname,
+        );
+
     // Exclude specific paths from authentication
     if (
+        isStaticAsset ||
         pathname.startsWith('/api/auth') || // NextAuth endpoints
         pathname.startsWith('/api/webhook') || // Webhook endpoint
         pathname.startsWith('/_next') || // Next.js static files
         pathname === '/favicon.ico' || // Favicon
-        pathname === '/public' || // Public folder
         pathname === '/' // Allow access to the root path
     ) {
         return NextResponse.next();
