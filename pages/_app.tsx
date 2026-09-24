@@ -21,7 +21,7 @@ interface MyAppProps extends AppProps {
 function MyApp({ Component, pageProps: { session, ...pageProps } }: MyAppProps) {
   return (
     <div className={`${inter.variable} font-sans`}>
-      <ThemeProvider attribute="class">
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
         <SessionProvider session={session}>
           <Component {...pageProps} />
           <Toaster />

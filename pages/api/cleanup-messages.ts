@@ -38,6 +38,17 @@ export default async function handler(
   const isCron = isAuthorizedCron(req);
 
   if (!isCron) {
+    // Cron without CRON_SECRET never authenticates — surface that clearly for GET (cron)
+    if (req.method === 'GET' && process.env.VERCEL && !process.env.CRON_SECRET) {
+      console.error(
+        'Cleanup cron rejected: set CRON_SECRET in Vercel env so cron can authorize as Bearer token',
+      );
+      res.status(401).json({
+        error: 'Unauthorized — set CRON_SECRET in Vercel project env for cron access',
+      });
+      return;
+    }
+
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user || !(session.user as { isAdmin?: boolean }).isAdmin) {
       res.status(401).json({ error: 'Unauthorized' });

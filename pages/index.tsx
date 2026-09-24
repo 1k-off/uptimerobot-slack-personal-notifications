@@ -1,6 +1,5 @@
 import { signIn, useSession } from "next-auth/react";
 import Websites from "./websites";
-import { ShieldCheck } from "lucide-react";
 
 const HomePage = () => {
   const { data: session, status } = useSession();
@@ -56,14 +55,6 @@ const HomePage = () => {
           </button>
         </div>
       </main>
-
-      {/* Subtle Footer */}
-      <footer className="mt-16 flex flex-col items-center gap-4 opacity-40 hover:opacity-100 transition-opacity duration-500">
-        <div className="flex items-center gap-2 text-xs">
-          <ShieldCheck className="text-base text-blue-500" size={16} />
-          <span>Secure SSO Authentication</span>
-        </div>
-      </footer>
     </div>
   );
 };

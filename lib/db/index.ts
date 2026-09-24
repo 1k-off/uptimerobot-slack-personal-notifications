@@ -3,3 +3,4 @@ export * from './mongodb';
 export * from './repositories/website.repository';
 export * from './repositories/group.repository';
 export * from './repositories/message.repository';
+export * from './repositories/audit-log.repository';

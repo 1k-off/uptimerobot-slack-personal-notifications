@@ -2,20 +2,36 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { Message, Session } from "@/types";
+import { Message, Session, SlackChannel, SlackUser } from "@/types";
 import { toast } from "sonner";
 import Header from "@/components/Header";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
+import { isSlackChannelId } from "@/lib/slack-ids";
 import {
   Info,
   Search,
   Trash2,
   Hash,
   AtSign,
-  ArrowUp,
   X,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+
+function unwrapList<T>(payload: unknown): T[] {
+  if (Array.isArray(payload)) {
+    return payload as T[];
+  }
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "data" in payload &&
+    Array.isArray((payload as { data: unknown }).data)
+  ) {
+    return (payload as { data: T[] }).data;
+  }
+  return [];
+}
 
 export default function AdminMessages() {
   const { data: session, status } = useSession();
@@ -27,6 +43,7 @@ export default function AdminMessages() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
+  const [targetNames, setTargetNames] = useState<Record<string, string>>({});
   const messagesPerPage = 50;
 
   // Get current page from URL or default to 1
@@ -102,6 +119,53 @@ export default function AdminMessages() {
     fetchMessages();
   }, [session, status, router, fetchMessages]);
 
+  useEffect(() => {
+    const typedSession = session as Session | null;
+    if (!typedSession?.user?.isAdmin) {
+      return;
+    }
+
+    const loadTargetNames = async () => {
+      try {
+        const [usersRes, channelsRes] = await Promise.all([
+          fetch("/api/slackUsers"),
+          fetch("/api/slackChannels"),
+        ]);
+
+        const names: Record<string, string> = {};
+
+        if (usersRes.ok) {
+          const users = unwrapList<SlackUser>(await usersRes.json());
+          for (const user of users) {
+            if (user.id && user.name) {
+              names[user.id] = user.name;
+            }
+          }
+        }
+
+        if (channelsRes.ok) {
+          const channels = unwrapList<SlackChannel>(await channelsRes.json());
+          for (const channel of channels) {
+            if (channel.id && channel.name) {
+              names[channel.id] = channel.name;
+            }
+          }
+        }
+
+        setTargetNames(names);
+      } catch (error) {
+        console.error("Failed to resolve Slack target names:", error);
+      }
+    };
+
+    loadTargetNames();
+  }, [session]);
+
+  const getTargetDisplay = useCallback(
+    (channelId: string) => targetNames[channelId] || channelId,
+    [targetNames],
+  );
+
   const handleDeleteSelected = async () => {
     if (!window.confirm(`Are you sure you want to delete ${selectedMessages.length} selected message(s)?`)) {
       return;
@@ -139,7 +203,11 @@ export default function AdminMessages() {
   };
 
   const triggerAutomatedCleanup = async () => {
-    if (!window.confirm("Are you sure you want to run automated cleanup? This will delete old messages based on retention settings.")) {
+    if (
+      !window.confirm(
+        "Run automated cleanup? This deletes old channel messages per retention settings. Personal DM notifications are not deleted.",
+      )
+    ) {
       return;
     }
 
@@ -365,7 +433,7 @@ export default function AdminMessages() {
         {/* Page Header */}
         <header className="mb-10">
           <h1 className="text-3xl font-bold mb-2 tracking-tight">
-            Message History
+            Notifications history
           </h1>
           <p className="text-zinc-400 flex items-center gap-2">
             <Info className="w-4 h-4 text-amber-500" />
@@ -507,7 +575,9 @@ export default function AdminMessages() {
                             className="hover:underline"
                           >
                             <span className="font-medium">
-                              Website {message.websiteId}
+                              {message.websiteUrl ||
+                                message.websiteName ||
+                                `Website ${message.websiteId}`}
                             </span>
                             <div className="text-xs text-zinc-400">
                               ID: {message.websiteId}
@@ -519,13 +589,16 @@ export default function AdminMessages() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            {message.channelId.startsWith("C") ? (
-                              <Hash className="w-4 h-4 text-zinc-400" />
+                            {isSlackChannelId(message.channelId) ? (
+                              <Hash className="w-4 h-4 text-zinc-400 shrink-0" />
                             ) : (
-                              <AtSign className="w-4 h-4 text-zinc-400" />
+                              <AtSign className="w-4 h-4 text-zinc-400 shrink-0" />
                             )}
-                            <span className="text-sm">
-                              {message.channelId}
+                            <span
+                              className="text-sm"
+                              title={message.channelId}
+                            >
+                              {getTargetDisplay(message.channelId)}
                             </span>
                           </div>
                         </td>
@@ -640,12 +713,7 @@ export default function AdminMessages() {
       </main>
 
       {/* Back to top FAB */}
-      <button
-        onClick={handleGoToTop}
-        className="fixed bottom-8 right-8 w-12 h-12 rounded-full bg-white text-black shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 cursor-pointer"
-      >
-        <ArrowUp className="w-5 h-5" />
-      </button>
+      <ScrollToTopButton onClick={handleGoToTop} />
     </div>
   );
 }

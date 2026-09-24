@@ -1,36 +1,84 @@
 import { setCachedData } from "./cache";
 import { getEnvConfig } from "@/lib/config";
 
+const UPTIMEROBOT_API_BASE = "https://api.uptimerobot.com/v3";
+const DEFAULT_PAGE_LIMIT = 50;
+
+/** Legacy numeric status codes used by the UI (v2-compatible). */
+export const MONITOR_STATUS = {
+  PAUSED: 0,
+  NOT_CHECKED: 1,
+  UP: 2,
+  SEEMS_DOWN: 8,
+  DOWN: 9,
+} as const;
+
+/** Legacy numeric monitor types used by the UI (v2-compatible). */
+export const MONITOR_TYPE = {
+  HTTP: 1,
+  KEYWORD: 2,
+  PING: 3,
+  PORT: 4,
+  HEARTBEAT: 5,
+  DNS: 6,
+  API: 7,
+  UDP: 8,
+  VISUAL_COMPARISON: 9,
+} as const;
+
+export type V3MonitorStatus =
+  | "PAUSED"
+  | "STARTED"
+  | "UP"
+  | "LOOKS_DOWN"
+  | "DOWN"
+  | string;
+
+export type V3MonitorType =
+  | "HTTP"
+  | "KEYWORD"
+  | "PING"
+  | "PORT"
+  | "HEARTBEAT"
+  | "DNS"
+  | "API"
+  | "UDP"
+  | "VISUAL_COMPARISON"
+  | string;
+
 export interface UptimeRobotMonitor {
   id: number;
   friendly_name: string;
   url: string;
   type: number;
   status: number;
-  uptime_ratio: number;
+  keyword_value?: string;
 }
 
-interface UptimeRobotMonitorData {
+interface V3AssignedAlertContact {
+  alertContactId: number;
+  threshold: number;
+  recurrence: number;
+}
+
+interface V3Monitor {
   id: number;
-  friendly_name: string;
-  url: string;
-  type: number;
-  status: number;
-  uptime_ratio: number;
+  friendlyName: string;
+  url?: string;
+  type?: V3MonitorType;
+  status?: V3MonitorStatus;
+  keywordValue?: string | null;
+  assignedAlertContacts?: V3AssignedAlertContact[];
 }
 
-interface UptimeRobotAlertContact {
-  id: string;
-  friendly_name: string;
+interface V3PaginatedMonitors {
+  data?: V3Monitor[];
+  nextLink?: string | null;
 }
 
-interface UptimeRobotResponse {
-  stat: "ok" | "fail";
-  error?: string | { type?: string; message?: string; parameter_name?: string };
-  monitors?: UptimeRobotMonitorData[];
-  alert_contacts?: UptimeRobotAlertContact[];
-  monitor?: UptimeRobotMonitorData;
-  [key: string]: unknown;
+interface V3AlertContact {
+  id: number;
+  friendlyName: string | null;
 }
 
 interface NewMonitorParams {
@@ -47,11 +95,13 @@ interface EditMonitorParams {
   id: number;
   friendly_name?: string;
   url?: string;
+  keyword_value?: string;
 }
 
-class UptimeRobotError extends Error {
+export class UptimeRobotError extends Error {
   constructor(
     message: string,
+    public statusCode?: number,
     public raw?: unknown,
   ) {
     super(message);
@@ -59,71 +109,209 @@ class UptimeRobotError extends Error {
   }
 }
 
-export async function fetchMonitors(): Promise<UptimeRobotMonitor[]> {
-  const config = getEnvConfig();
+export function mapV3StatusToLegacy(status: V3MonitorStatus | undefined): number {
+  switch ((status || "").toUpperCase()) {
+    case "PAUSED":
+      return MONITOR_STATUS.PAUSED;
+    case "STARTED":
+      return MONITOR_STATUS.NOT_CHECKED;
+    case "UP":
+      return MONITOR_STATUS.UP;
+    case "LOOKS_DOWN":
+      return MONITOR_STATUS.SEEMS_DOWN;
+    case "DOWN":
+      return MONITOR_STATUS.DOWN;
+    default:
+      return MONITOR_STATUS.NOT_CHECKED;
+  }
+}
 
+export function mapV3TypeToLegacy(type: V3MonitorType | undefined): number {
+  switch ((type || "").toUpperCase()) {
+    case "HTTP":
+      return MONITOR_TYPE.HTTP;
+    case "KEYWORD":
+      return MONITOR_TYPE.KEYWORD;
+    case "PING":
+      return MONITOR_TYPE.PING;
+    case "PORT":
+      return MONITOR_TYPE.PORT;
+    case "HEARTBEAT":
+      return MONITOR_TYPE.HEARTBEAT;
+    case "DNS":
+      return MONITOR_TYPE.DNS;
+    case "API":
+      return MONITOR_TYPE.API;
+    case "UDP":
+      return MONITOR_TYPE.UDP;
+    case "VISUAL_COMPARISON":
+      return MONITOR_TYPE.VISUAL_COMPARISON;
+    default:
+      return MONITOR_TYPE.HTTP;
+  }
+}
+
+export function mapV3MonitorToLegacy(monitor: V3Monitor): UptimeRobotMonitor {
+  return {
+    id: monitor.id,
+    friendly_name: monitor.friendlyName,
+    url: monitor.url || "",
+    type: mapV3TypeToLegacy(monitor.type),
+    status: mapV3StatusToLegacy(monitor.status),
+    keyword_value: monitor.keywordValue ?? undefined,
+  };
+}
+
+function extractErrorMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== "object") {
+    return fallback;
+  }
+
+  const data = payload as Record<string, unknown>;
+
+  if (typeof data.message === "string" && data.message) {
+    return data.message;
+  }
+
+  if (typeof data.error === "string" && data.error) {
+    return data.error;
+  }
+
+  if (data.error && typeof data.error === "object") {
+    const err = data.error as Record<string, unknown>;
+    if (typeof err.message === "string" && err.message) {
+      return err.message;
+    }
+    if (typeof err.type === "string" && err.type) {
+      return err.type;
+    }
+  }
+
+  if (Array.isArray(data.errors) && data.errors.length > 0) {
+    const first = data.errors[0];
+    if (typeof first === "string") {
+      return first;
+    }
+    if (first && typeof first === "object" && "message" in first) {
+      const message = (first as { message?: unknown }).message;
+      if (typeof message === "string" && message) {
+        return message;
+      }
+    }
+  }
+
+  return fallback;
+}
+
+function getApiKey(): string {
+  const config = getEnvConfig();
   if (!config.uptimeRobotApiKey) {
     throw new Error("UPTIMEROBOT_API_KEY not configured");
   }
+  return config.uptimeRobotApiKey;
+}
 
-  const limit = 50;
-  let allMonitors: UptimeRobotMonitorData[] = [];
-  let offset = 0;
-  let totalMonitors = 0;
+async function uptimeRobotRequest<T>(
+  path: string,
+  options: {
+    method?: string;
+    body?: unknown;
+    apiKey?: string;
+  } = {},
+): Promise<T> {
+  const apiKey = options.apiKey ?? getApiKey();
+  const method = options.method ?? "GET";
 
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    Accept: "application/json",
+  };
+
+  if (options.body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const response = await fetch(`${UPTIMEROBOT_API_BASE}${path}`, {
+    method,
+    headers,
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+  });
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const text = await response.text();
+  let payload: unknown = undefined;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = { message: text };
+    }
+  }
+
+  if (!response.ok) {
+    throw new UptimeRobotError(
+      extractErrorMessage(payload, `UptimeRobot API error (${response.status})`),
+      response.status,
+      payload,
+    );
+  }
+
+  return payload as T;
+}
+
+function cursorFromNextLink(nextLink: string | null | undefined): number | null {
+  if (!nextLink) {
+    return null;
+  }
+
+  try {
+    const url = new URL(nextLink);
+    const cursor = url.searchParams.get("cursor");
+    if (!cursor) {
+      return null;
+    }
+    const parsed = Number(cursor);
+    return Number.isFinite(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchMonitors(): Promise<UptimeRobotMonitor[]> {
+  const config = getEnvConfig();
+  const apiKey = getApiKey();
   const cacheTime = config.uptimeRobotDataCacheTime;
 
   try {
+    const allMonitors: V3Monitor[] = [];
+    let cursor: number | null = null;
+
     do {
-      const body = new URLSearchParams({
-        api_key: config.uptimeRobotApiKey,
-        format: "json",
-        limit: limit.toString(),
-        offset: offset.toString(),
+      const params = new URLSearchParams({
+        limit: String(DEFAULT_PAGE_LIMIT),
       });
-
-      const response = await fetch(
-        "https://api.uptimerobot.com/v2/getMonitors",
-        {
-          method: "POST",
-          body,
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        },
-      );
-
-      const data: UptimeRobotResponse = await response.json();
-
-      if (data.stat !== "ok") {
-        let errorMessage = "Failed to fetch monitors";
-        if (data.error) {
-          if (typeof data.error === "string") {
-            errorMessage = data.error;
-          } else if (typeof data.error === "object") {
-            errorMessage =
-              data.error.message ||
-              data.error.type ||
-              JSON.stringify(data.error);
-          }
-        }
-        throw new UptimeRobotError(errorMessage, data);
+      if (cursor !== null) {
+        params.set("cursor", String(cursor));
       }
 
-      totalMonitors = data.monitors?.length || 0;
-      allMonitors = allMonitors.concat(data.monitors || []);
-      offset += limit;
-    } while (totalMonitors === limit);
+      const page = await uptimeRobotRequest<V3PaginatedMonitors>(
+        `/monitors?${params.toString()}`,
+        { apiKey },
+      );
 
-    const monitors: UptimeRobotMonitor[] = allMonitors.map((monitor) => ({
-      id: monitor.id,
-      friendly_name: monitor.friendly_name,
-      url: monitor.url,
-      type: monitor.type,
-      status: monitor.status,
-      uptime_ratio: monitor.uptime_ratio,
-    }));
+      const pageData = page.data || [];
+      allMonitors.push(...pageData);
 
+      cursor = cursorFromNextLink(page.nextLink);
+      if (!page.nextLink || pageData.length === 0) {
+        cursor = null;
+      }
+    } while (cursor !== null);
+
+    const monitors = allMonitors.map(mapV3MonitorToLegacy);
     setCachedData("websites", { monitors, timestamp: Date.now() }, cacheTime);
     return monitors;
   } catch (error) {
@@ -132,153 +320,82 @@ export async function fetchMonitors(): Promise<UptimeRobotMonitor[]> {
   }
 }
 
+export async function getMonitor(id: number): Promise<UptimeRobotMonitor> {
+  const monitor = await uptimeRobotRequest<V3Monitor>(`/monitors/${id}`);
+  return mapV3MonitorToLegacy(monitor);
+}
+
 export async function newMonitor(
   params: NewMonitorParams,
-): Promise<UptimeRobotResponse> {
-  const config = getEnvConfig();
-
-  if (!config.uptimeRobotApiKey) {
-    throw new Error("UPTIMEROBOT_API_KEY not configured");
-  }
-
+): Promise<V3Monitor> {
   const alertContactIds = await getAlertContactsByNames();
 
-  // Format alert contacts with threshold and recurrence
-  const formattedAlertContacts = alertContactIds
-    .map((id) => `${id}_0_0`)
-    .join("-");
+  const assignedAlertContacts: V3AssignedAlertContact[] = alertContactIds.map(
+    (id) => ({
+      alertContactId: id,
+      threshold: 0,
+      recurrence: 0,
+    }),
+  );
 
-  const body = new URLSearchParams({
-    api_key: config.uptimeRobotApiKey,
-    friendly_name: params.friendly_name,
+  // Matches previous v2 behaviour: keyword_type=2 (not exists), keyword_case_type=1 (insensitive)
+  const body = {
+    friendlyName: params.friendly_name,
     url: params.url,
-    type: "2", // keyword
-    keyword_type: "2",
-    keyword_case_type: "1",
-    keyword_value: params.keyword_value || "",
-    interval: "60",
-    timeout: "15",
-    ignore_ssl_errors: "0",
-    disable_domain_expire_notifications: "0",
-    alert_contacts: formattedAlertContacts,
-  });
+    type: "KEYWORD",
+    interval: 60,
+    timeout: 30,
+    httpMethodType: "GET",
+    keywordType: "ALERT_NOT_EXISTS",
+    keywordCaseType: "CaseInsensitive",
+    keywordValue: params.keyword_value || "",
+    checkSSLErrors: true,
+    domainExpirationReminder: true,
+    ...(assignedAlertContacts.length
+      ? { assignedAlertContacts }
+      : {}),
+  };
 
-  const response = await fetch("https://api.uptimerobot.com/v2/newMonitor", {
+  return uptimeRobotRequest<V3Monitor>("/monitors", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-
-  const data: UptimeRobotResponse = await response.json();
-
-  if (data.stat !== "ok") {
-    let errorMessage = "Failed to create new monitor";
-    if (data.error) {
-      if (typeof data.error === "string") {
-        errorMessage = data.error;
-      } else if (typeof data.error === "object") {
-        errorMessage =
-          data.error.message || data.error.type || JSON.stringify(data.error);
-      }
-    }
-    throw new UptimeRobotError(errorMessage, data);
-  }
-
-  return data;
 }
 
 export async function editMonitor(
   params: EditMonitorParams,
-): Promise<UptimeRobotResponse> {
-  const config = getEnvConfig();
-
-  if (!config.uptimeRobotApiKey) {
-    throw new Error("UPTIMEROBOT_API_KEY not configured");
-  }
-
-  const bodyParams: Record<string, string> = {
-    api_key: config.uptimeRobotApiKey,
-    id: String(params.id),
-  };
+): Promise<V3Monitor> {
+  const body: Record<string, unknown> = {};
 
   if (params.friendly_name !== undefined) {
-    bodyParams.friendly_name = params.friendly_name;
+    body.friendlyName = params.friendly_name;
   }
 
   if (params.url !== undefined) {
-    bodyParams.url = params.url;
+    body.url = params.url;
   }
 
-  const body = new URLSearchParams(bodyParams);
+  if (params.keyword_value !== undefined) {
+    body.keywordValue = params.keyword_value;
+  }
 
-  const response = await fetch("https://api.uptimerobot.com/v2/editMonitor", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  return uptimeRobotRequest<V3Monitor>(`/monitors/${params.id}`, {
+    method: "PATCH",
     body,
   });
-
-  const data: UptimeRobotResponse = await response.json();
-
-  if (data.stat !== "ok") {
-    let errorMessage = "Failed to edit monitor";
-    if (data.error) {
-      if (typeof data.error === "string") {
-        errorMessage = data.error;
-      } else if (typeof data.error === "object") {
-        errorMessage =
-          data.error.message || data.error.type || JSON.stringify(data.error);
-      }
-    }
-    throw new UptimeRobotError(errorMessage, data);
-  }
-
-  return data;
 }
 
 export async function deleteMonitor(
   params: DeleteMonitorParams,
-): Promise<UptimeRobotResponse> {
-  const config = getEnvConfig();
-
-  if (!config.uptimeRobotApiKey) {
-    throw new Error("UPTIMEROBOT_API_KEY not configured");
-  }
-
-  const body = new URLSearchParams({
-    api_key: config.uptimeRobotApiKey,
-    id: String(params.id),
+): Promise<void> {
+  await uptimeRobotRequest<void>(`/monitors/${params.id}`, {
+    method: "DELETE",
   });
-
-  const response = await fetch("https://api.uptimerobot.com/v2/deleteMonitor", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
-
-  const data: UptimeRobotResponse = await response.json();
-
-  if (data.stat !== "ok") {
-    let errorMessage = "Failed to delete monitor";
-    if (data.error) {
-      if (typeof data.error === "string") {
-        errorMessage = data.error;
-      } else if (typeof data.error === "object") {
-        errorMessage =
-          data.error.message || data.error.type || JSON.stringify(data.error);
-      }
-    }
-    throw new UptimeRobotError(errorMessage, data);
-  }
-
-  return data;
 }
 
-export async function getAlertContactsByNames(): Promise<string[]> {
+export async function getAlertContactsByNames(): Promise<number[]> {
   const config = getEnvConfig();
-
-  if (!config.uptimeRobotApiKey) {
-    throw new Error("UPTIMEROBOT_API_KEY not configured");
-  }
+  getApiKey();
 
   if (!config.uptimeRobotAlertContactNames.length) {
     console.warn(
@@ -288,49 +405,26 @@ export async function getAlertContactsByNames(): Promise<string[]> {
   }
 
   try {
-    const body = new URLSearchParams({
-      api_key: config.uptimeRobotApiKey,
-      format: "json",
-    });
-
-    const response = await fetch(
-      "https://api.uptimerobot.com/v2/getAlertContacts",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body,
-      },
+    const contacts = await uptimeRobotRequest<V3AlertContact[]>(
+      "/user/alert-contacts",
     );
 
-    const data: UptimeRobotResponse = await response.json();
-
-    if (data.stat !== "ok") {
-      let errorMessage = "Failed to fetch alert contacts";
-      if (data.error) {
-        if (typeof data.error === "string") {
-          errorMessage = data.error;
-        } else if (typeof data.error === "object") {
-          errorMessage =
-            data.error.message || data.error.type || JSON.stringify(data.error);
-        }
-      }
-      throw new UptimeRobotError(errorMessage, data);
-    }
-
-    const matchingContacts =
-      data.alert_contacts
-        ?.filter((contact) =>
-          config.uptimeRobotAlertContactNames.includes(contact.friendly_name),
-        )
-        .map((contact) => contact.id) || [];
+    const matchingContacts = (contacts || [])
+      .filter(
+        (contact) =>
+          !!contact.friendlyName &&
+          config.uptimeRobotAlertContactNames.includes(contact.friendlyName),
+      )
+      .map((contact) => contact.id);
 
     if (matchingContacts.length < config.uptimeRobotAlertContactNames.length) {
-      const foundNames =
-        data.alert_contacts
-          ?.filter((contact) =>
-            config.uptimeRobotAlertContactNames.includes(contact.friendly_name),
-          )
-          .map((contact) => contact.friendly_name) || [];
+      const foundNames = (contacts || [])
+        .filter(
+          (contact) =>
+            !!contact.friendlyName &&
+            config.uptimeRobotAlertContactNames.includes(contact.friendlyName),
+        )
+        .map((contact) => contact.friendlyName as string);
       const missingNames = config.uptimeRobotAlertContactNames.filter(
         (name) => !foundNames.includes(name),
       );

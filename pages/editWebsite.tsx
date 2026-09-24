@@ -35,6 +35,7 @@ interface WebsiteData {
   id: number;
   friendlyName?: string;
   url?: string;
+  keywordValue?: string;
   alertContacts?: {
     slack?: {
       users?: string[];
@@ -55,6 +56,7 @@ const EditWebsite = () => {
   const [website, setWebsite] = useState<WebsiteData | null>(null);
   const [friendlyName, setFriendlyName] = useState<string>("");
   const [url, setUrl] = useState<string>("");
+  const [keywordValue, setKeywordValue] = useState<string>("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [userOptions, setUserOptions] = useState<SlackUser[]>([]);
@@ -81,6 +83,7 @@ const EditWebsite = () => {
             data.friendlyName || (queryFriendlyName as string) || "",
           );
           setUrl(data.url || (queryUrl as string) || "");
+          setKeywordValue(data.keywordValue || "");
           setSelectedUsers(data.alertContacts?.slack?.users || []);
           setSelectedChannels(data.alertContacts?.slack?.channels || []);
           if (data.group) setSelectedGroup(data.group);
@@ -96,6 +99,7 @@ const EditWebsite = () => {
           setWebsite({ id: parseInt(id as string) });
           setFriendlyName((queryFriendlyName as string) || "");
           setUrl((queryUrl as string) || "");
+          setKeywordValue("");
         }
       } catch (error) {
         console.error("Failed to fetch website data:", error);
@@ -108,6 +112,12 @@ const EditWebsite = () => {
   }, [id, queryFriendlyName, queryUrl]);
 
   const handleSave = async () => {
+    const trimmedKeyword = keywordValue.trim();
+    if (!trimmedKeyword) {
+      toast.error("Keyword is required");
+      return;
+    }
+
     const activeUserIds = new Set(userOptions.map((u) => u.id));
     const usersToSave =
       userOptions.length > 0
@@ -131,6 +141,7 @@ const EditWebsite = () => {
     const updateData = {
       friendlyName,
       url,
+      keywordValue: trimmedKeyword,
       alertContacts,
       group: selectedGroup
         ? { _id: selectedGroup._id, name: selectedGroup.name }
@@ -350,6 +361,28 @@ const EditWebsite = () => {
               </div>
               <div className="md:col-span-2 space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                  Keyword
+                </label>
+                <input
+                  type="text"
+                  value={keywordValue}
+                  onChange={(e) => setKeywordValue(e.target.value)}
+                  disabled={loading}
+                  className="w-full bg-[var(--bg-elevated)] border border-zinc-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder={
+                    loading ? "Loading..." : "Text to monitor on the page"
+                  }
+                  autoComplete="off"
+                  data-1p-ignore
+                  data-lpignore="true"
+                  data-form-type="other"
+                />
+                <p className="text-xs text-zinc-500">
+                  Alert when this text is missing from the page response.
+                </p>
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
                   Group
                 </label>
                 <GroupAutocomplete
@@ -357,6 +390,11 @@ const EditWebsite = () => {
                   onChange={setSelectedGroup}
                   websiteId={website?.id || 0}
                 />
+                <p className="text-xs text-zinc-500">
+                  Groups link related monitors so alerts for the same project are
+                  batched into one Slack thread instead of separate messages per
+                  site.
+                </p>
               </div>
             </div>
           </section>

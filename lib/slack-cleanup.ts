@@ -1,5 +1,6 @@
 import { WebClient } from '@slack/web-api';
 import { getEnvConfig } from '@/lib/config';
+import { isSlackChannelId } from '@/lib/slack-ids';
 import { messageRepository } from "./db";
 import { MessageRecord } from "@/types";
 
@@ -27,11 +28,16 @@ export interface CleanupResult {
 }
 
 /**
- * Save a message record to the database
+ * Save a channel message record to the database.
+ * Personal / DM notifications are not persisted.
  */
 export async function saveMessageRecord(
   messageRecord: MessageRecord,
 ): Promise<void> {
+  if (!isSlackChannelId(messageRecord.channelId)) {
+    return;
+  }
+
   try {
     await messageRepository.create(messageRecord);
   } catch (error) {
@@ -109,7 +115,8 @@ function resolveRunLimits(config: { slackCleanupTimeBudget: boolean }, overrides
 }
 
 /**
- * Clean up old messages.
+ * Clean up old channel messages.
+ * Personal / DM notifications are left untouched (Slack + DB).
  * With SLACK_CLEANUP_TIME_BUDGET=true (default): limited batch + time budget (Vercel-safe).
  * With SLACK_CLEANUP_TIME_BUDGET=false: runs until backlog is drained (local).
  */
@@ -195,11 +202,16 @@ export async function cleanupOldMessages(options?: {
 
         const message = oldMessages[i];
 
+        // Defense in depth: never delete personal / DM notifications via cleanup
+        if (!isSlackChannelId(message.channelId)) {
+          skipped++;
+          continue;
+        }
+
         try {
           await slackClient.chat.delete({
             channel: message.channelId,
             ts: message.messageId,
-            as_user: true,
           });
 
           slackDeleted++;
@@ -235,6 +247,7 @@ export async function cleanupOldMessages(options?: {
 
           const errorCode = (error as { data?: { error?: string } }).data?.error;
 
+          // Safe to drop from DB — Slack message is gone or permanently unreachable
           if (
             errorCode === 'message_not_found' ||
             errorCode === 'channel_not_found' ||
@@ -247,12 +260,12 @@ export async function cleanupOldMessages(options?: {
             skipped++;
             processedIds.push(message.messageId);
           } else {
+            // Transient / unknown errors — keep DB row so the next run can retry
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             console.error(
-              `✗ Failed to delete message ${message.messageId}: ${errorCode || errorMessage}`,
+              `✗ Failed to delete message ${message.messageId}: ${errorCode || errorMessage} (kept in DB for retry)`,
             );
             skipped++;
-            processedIds.push(message.messageId);
           }
         }
       }

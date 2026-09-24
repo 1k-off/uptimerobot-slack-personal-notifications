@@ -8,7 +8,6 @@ import {
   Search,
   User,
   Hash,
-  ArrowUp,
   Edit3,
   Trash2,
   X,
@@ -16,6 +15,7 @@ import {
 import { useRouter } from "next/router";
 import AlertModal from "@/components/AlertModal";
 import Header from "@/components/Header";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 import type { MonitorFormProps } from "@/types";
 
 interface SlackUser {
@@ -34,7 +34,7 @@ interface Website {
   url: string;
   status?: number; // UptimeRobot status: 0=paused, 1=not checked yet, 2=up, 8=seems down, 9=down
   type?: number;
-  uptime_ratio?: number;
+  createdBy?: string;
   alertContacts?: {
     slack?: {
       users?: string[];
@@ -51,12 +51,15 @@ const Websites = () => {
   const router = useRouter();
   const [websites, setWebsites] = useState<Website[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [allCount, setAllCount] = useState<number>(0);
   const [userOptions, setUserOptions] = useState<SlackUser[]>([]);
   const [channelOptions, setChannelOptions] = useState<SlackChannel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
+  type ListFilter = "all" | "down" | "not-owned";
+  const [statusFilter, setStatusFilter] = useState<ListFilter>("all");
   const itemsPerPage = 12;
 
   // Get current page from URL or default to 1
@@ -66,13 +69,28 @@ const Websites = () => {
     null,
   );
 
-  const fetchWebsites = async (page: number, search: string = "") => {
+  const parseListFilter = (value: unknown): ListFilter => {
+    if (value === "down") return "down";
+    if (value === "not-owned" || value === "not_owned") return "not-owned";
+    return "all";
+  };
+
+  const monitorQuota = Number(
+    process.env.NEXT_PUBLIC_UPTIMEROBOT_WEBSITES_ALL || 50,
+  );
+
+  const fetchWebsites = async (
+    page: number,
+    search: string = "",
+    status: ListFilter = "all",
+  ) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: itemsPerPage.toString(),
         ...(search && { search }),
+        ...(status !== "all" && { status }),
       });
 
       const response = await fetch(`/api/websites?${params}`);
@@ -81,10 +99,16 @@ const Websites = () => {
       }
       const data = await response.json();
       const websitesData = data.success ? data.data : data;
-      setWebsites(Array.isArray(websitesData) ? websitesData : []);
-      setTotalCount(
-        data.total || (Array.isArray(websitesData) ? websitesData.length : 0),
-      );
+      const list = Array.isArray(websitesData) ? websitesData : [];
+      setWebsites(list);
+
+      const filteredTotal =
+        typeof data.total === "number" ? data.total : list.length;
+      const monitorsTotal =
+        typeof data.totalAll === "number" ? data.totalAll : filteredTotal;
+
+      setTotalCount(filteredTotal);
+      setAllCount(monitorsTotal);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -122,20 +146,22 @@ const Websites = () => {
 
     const page = Number(router.query.page) || 1;
     const search = (router.query.search as string) || "";
+    const status = parseListFilter(router.query.status);
 
     setSearchQuery(search);
     setDebouncedSearchQuery(search);
-    fetchWebsites(page, search);
+    setStatusFilter(status);
+    fetchWebsites(page, search, status);
     fetchUserOptions();
     fetchChannelOptions();
-  }, [router.isReady, router.query.page, router.query.search]);
+  }, [router.isReady, router.query.page, router.query.search, router.query.status]);
 
   // Debounced search effect
   useEffect(() => {
     if (!router.isReady) return;
 
     const currentSearch = (router.query.search as string) || "";
-    
+
     // Only update URL if search query is different from current URL param
     if (searchQuery === currentSearch) return;
 
@@ -143,9 +169,14 @@ const Websites = () => {
       setDebouncedSearchQuery(searchQuery);
 
       // Update URL with search query and reset to page 1
-      const query: { page?: string; search?: string } = { page: "1" };
+      const query: { page?: string; search?: string; status?: string } = {
+        page: "1",
+      };
       if (searchQuery) {
         query.search = searchQuery;
+      }
+      if (statusFilter !== "all") {
+        query.status = statusFilter;
       }
 
       router.push(
@@ -160,6 +191,30 @@ const Websites = () => {
 
     return () => clearTimeout(timer);
   }, [searchQuery, router.isReady, router.query.search]);
+
+  const handleStatusFilterChange = (next: ListFilter) => {
+    if (next === statusFilter) return;
+    setStatusFilter(next);
+
+    const query: { page?: string; search?: string; status?: string } = {
+      page: "1",
+    };
+    if (searchQuery) {
+      query.search = searchQuery;
+    }
+    if (next !== "all") {
+      query.status = next;
+    }
+
+    router.push(
+      {
+        pathname: router.pathname,
+        query,
+      },
+      undefined,
+      { shallow: true },
+    );
+  };
 
   const handleEdit = (website: Website) => {
     router.push({
@@ -280,43 +335,95 @@ const Websites = () => {
                 Websites List
               </h1>
               <p className="text-zinc-400 font-medium">
-                <span className="">{totalCount}</span> /{" "}
-                {process.env.NEXT_PUBLIC_UPTIMEROBOT_WEBSITES_ALL || "50"}{" "}
-                websites monitored
+                {statusFilter === "all" ? (
+                  <>
+                    <span className="">{allCount}</span> / {monitorQuota}{" "}
+                    websites monitored
+                  </>
+                ) : (
+                  <>
+                    <span className="">{totalCount}</span>
+                    {statusFilter === "down" ? " down" : " unowned"}
+                    {" · "}
+                    <span className="">{allCount}</span> total
+                  </>
+                )}
               </p>
             </div>
             <button
               onClick={handleCreateMonitor}
-              disabled={
-                totalCount >=
-                Number(process.env.NEXT_PUBLIC_UPTIMEROBOT_WEBSITES_ALL || 50)
-              }
-              className="flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-lg font-medium dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer lg:flex-shrink-0"
+              disabled={allCount >= monitorQuota}
+              className="flex items-center gap-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer lg:flex-shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span>Create Monitor</span>
             </button>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search websites by name or URL..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--bg-elevated)] border border-zinc-800 rounded-xl py-3 pl-11 pr-10 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all"
-            />
-            {searchQuery && (
+          {/* Search + status filter */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search websites by name or URL..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-xl py-3 pl-11 pr-10 placeholder:text-[var(--text-secondary)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--text-primary)_12%,transparent)] focus:border-[color-mix(in_srgb,var(--text-primary)_35%,transparent)] transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4 cursor-pointer" />
+                </button>
+              )}
+            </div>
+
+            <div
+              className="inline-flex rounded-xl border border-[var(--border-color)] bg-[var(--bg-elevated)] p-1 self-stretch sm:self-auto"
+              role="group"
+              aria-label="Status filter"
+            >
               <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors"
-                aria-label="Clear search"
+                type="button"
+                title="Show all monitors"
+                onClick={() => handleStatusFilterChange("all")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  statusFilter === "all"
+                    ? "bg-[var(--bg-subtle)] text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
               >
-                <X className="w-4 h-4 cursor-pointer" />
+                All
               </button>
-            )}
+              <button
+                type="button"
+                title="Show only monitors that are down or seem down"
+                onClick={() => handleStatusFilterChange("down")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  statusFilter === "down"
+                    ? "bg-red-500/15 text-red-400"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                Down
+              </button>
+              <button
+                type="button"
+                title="Show monitors with no Slack users or channels subscribed"
+                onClick={() => handleStatusFilterChange("not-owned")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                  statusFilter === "not-owned"
+                    ? "bg-amber-500/15 text-amber-400"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                Not owned
+              </button>
+            </div>
           </div>
         </div>
 
@@ -328,6 +435,11 @@ const Websites = () => {
               {startIndex + 1}-{endIndex}
             </span>{" "}
             of <span className="font-medium">{totalCount}</span>{" "}
+            {statusFilter === "down"
+              ? "down "
+              : statusFilter === "not-owned"
+                ? "unowned "
+                : ""}
             {totalCount === 1 ? "website" : "websites"}
           </div>
         )}
@@ -352,11 +464,11 @@ const Websites = () => {
                 key={website.id}
                 className={`bg-[var(--bg-elevated)] border ${
                   isUp
-                    ? "border-zinc-800"
+                    ? "border-[var(--border-color)]"
                     : isDown
                       ? "border-red-500/30"
                       : "border-amber-500/30"
-                } rounded-2xl p-6 dark:hover:border-white/20 transition-all group flex flex-col h-full`}
+                } rounded-2xl p-6 hover:border-[color-mix(in_srgb,var(--text-primary)_25%,transparent)] transition-all group flex flex-col h-full`}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -459,15 +571,17 @@ const Websites = () => {
                   )}
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-zinc-800 flex items-center justify-between">
-                  <div className="text-xs text-zinc-400">
-                    {website.uptime_ratio !== undefined && (
-                      <span className="font-medium">
-                        Uptime: {website.uptime_ratio}%
-                      </span>
-                    )}
+                <div className="mt-auto pt-4 border-t border-[var(--border-color)] flex items-center justify-between gap-3">
+                  <div className="text-xs text-[var(--text-secondary)] min-w-0">
+                    <span className="text-[var(--text-secondary)]">Added by </span>
+                    <span
+                      className="font-medium text-[var(--text-primary)] truncate inline-block max-w-[12rem] align-bottom"
+                      title={website.createdBy || 'system'}
+                    >
+                      {website.createdBy || 'system'}
+                    </span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => handleEdit(website)}
                       className="p-2 hover:bg-[var(--bg-subtle)] rounded-lg transition-colors cursor-pointer"
@@ -503,7 +617,11 @@ const Websites = () => {
         {!loading && websites.length === 0 && (
           <div className="text-center py-12">
             <p className="text-zinc-400 text-lg">
-              No websites found
+              {statusFilter === "down"
+                ? "No down websites found"
+                : statusFilter === "not-owned"
+                  ? "No unowned websites found"
+                  : "No websites found"}
               {debouncedSearchQuery ? " matching your search" : ""}.
             </p>
           </div>
@@ -511,8 +629,8 @@ const Websites = () => {
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-4 bg-[var(--bg-elevated)] border border-zinc-800 rounded-2xl px-6 py-6">
-            <p className="text-xs text-zinc-400">
+          <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-4 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-2xl px-6 py-6">
+            <p className="text-xs text-[var(--text-secondary)]">
               Showing{" "}
               <span className="font-medium">
                 {startIndex + 1}-{endIndex}
@@ -524,7 +642,7 @@ const Websites = () => {
               <button
                 onClick={handlePreviousPage}
                 disabled={currentPage === 1}
-                className="px-4 py-2 text-sm font-medium border border-zinc-800 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="px-4 py-2 text-sm font-medium border border-[var(--border-color)] rounded-lg hover:bg-[var(--bg-subtle)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 Previous
               </button>
@@ -538,8 +656,8 @@ const Websites = () => {
                     onClick={() => handlePageClick(page)}
                     className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm font-bold transition-colors cursor-pointer ${
                       currentPage === page
-                        ? "bg-white text-black"
-                        : "hover:bg-white/5 text-zinc-400"
+                        ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]"
+                        : "hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"
                     }`}
                   >
                     {page}
@@ -564,7 +682,7 @@ const Websites = () => {
               <button
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 text-sm font-medium border border-zinc-800 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="px-4 py-2 text-sm font-medium border border-[var(--border-color)] rounded-lg hover:bg-[var(--bg-subtle)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 Next
               </button>
@@ -574,14 +692,7 @@ const Websites = () => {
       </main>
 
       {/* FAB - Scroll to Top (bottom-right) */}
-      <div className="fixed bottom-8 right-8 z-50">
-        <button
-          onClick={handleGoToTop}
-          className="w-12 h-12 bg-[var(--bg-elevated)] border border-zinc-800 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-white hover:text-black hover:scale-110 active:scale-95 transition-all cursor-pointer"
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
-      </div>
+      <ScrollToTopButton onClick={handleGoToTop} />
 
       {/* Modals */}
       {modalContent && (
@@ -709,20 +820,18 @@ const MonitorForm = ({
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-[24px] font-bold tracking-tight text-black">
+      <div className="mb-8 pr-8">
+        <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
           {action === "newMonitor" ? "Create Monitor" : "Delete Monitor"}
         </h2>
       </div>
 
       {action === "newMonitor" && (
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* URL Field */}
           <div className="space-y-2">
             <label
               htmlFor="url"
-              className="block text-[13px] font-semibold text-[#1e293b] uppercase tracking-wide"
+              className="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide"
             >
               URL
             </label>
@@ -734,15 +843,14 @@ const MonitorForm = ({
               placeholder="https://example.com"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-[#e2e8f0] rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-950 focus:border-transparent transition-all duration-200"
+              className="ds-input"
             />
           </div>
 
-          {/* Keyword Field */}
           <div className="space-y-2">
             <label
               htmlFor="keyword"
-              className="block text-[13px] font-semibold text-[#1e293b] uppercase tracking-wide"
+              className="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide"
             >
               Keyword
             </label>
@@ -754,24 +862,27 @@ const MonitorForm = ({
               placeholder="Text to monitor on the page"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-[#e2e8f0] rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-950 focus:border-transparent transition-all duration-200"
+              className="ds-input"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              data-form-type="other"
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-4 mt-10">
+          <div className="flex items-center justify-end gap-2 mt-10">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="px-6 py-2.5 text-sm font-semibold text-gray-700 hover:text-black transition-colors duration-200 disabled:opacity-50 cursor-pointer"
+              className="ds-btn-ghost cursor-pointer disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-8 py-2.5 bg-[#111827] text-white text-sm font-semibold rounded-lg hover:bg-black active:scale-95 transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="ds-btn-primary cursor-pointer"
             >
               {submitting ? "Creating..." : "Create"}
             </button>
@@ -782,30 +893,31 @@ const MonitorForm = ({
       {action === "deleteMonitor" && (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            <p className="text-sm text-gray-900">
+            <p className="text-sm text-[var(--text-primary)]">
               Are you sure you want to delete{" "}
               <span className="font-semibold">{websiteName}</span>?
             </p>
-            <p className="text-xs text-gray-500">Monitor ID: {monitorId}</p>
-            <p className="text-xs text-red-600 font-medium">
+            <p className="text-xs text-[var(--text-secondary)]">
+              Monitor ID: {monitorId}
+            </p>
+            <p className="text-xs text-[var(--accent-danger)] font-medium">
               This action cannot be undone.
             </p>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-4 mt-10">
+          <div className="flex items-center justify-end gap-2 mt-10">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="px-6 py-2.5 text-sm font-semibold text-gray-700 hover:text-black transition-colors duration-200 disabled:opacity-50 cursor-pointer"
+              className="ds-btn-ghost cursor-pointer disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-8 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 active:scale-95 transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="ds-btn-danger cursor-pointer"
             >
               {submitting ? "Deleting..." : "Delete"}
             </button>
@@ -817,8 +929,8 @@ const MonitorForm = ({
         <div
           className={`mt-6 p-4 rounded-lg text-sm font-medium ${
             result.success
-              ? "bg-green-50 text-green-800 border border-green-200"
-              : "bg-red-50 text-red-800 border border-red-200"
+              ? "bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20"
+              : "bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20"
           }`}
         >
           {result.message}

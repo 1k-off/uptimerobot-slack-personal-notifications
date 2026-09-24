@@ -4,19 +4,19 @@ import { AlertModalProps } from '@/types';
 
 const AlertModal: React.FC<AlertModalProps> = ({ children, onClose }) => {
   return (
-    <div 
-      className="fixed inset-0 flex items-center justify-center z-50 bg-black/70 backdrop-blur-sm overlay-fade"
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 dark:bg-black/70 backdrop-blur-sm overlay-fade px-4"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
-      <div 
-        className="relative bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[480px] modal-enter"
+      <div
+        className="relative w-full max-w-[480px] rounded-2xl border border-[var(--border-color)] bg-[var(--bg-elevated)] text-[var(--text-primary)] p-8 shadow-2xl modal-enter"
         onClick={(e) => e.stopPropagation()}
       >
-        <button 
+        <button
           type="button"
-          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+          className="absolute top-6 right-6 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-200 cursor-pointer"
           onClick={onClose}
           aria-label="Close"
         >
@@ -28,4 +28,4 @@ const AlertModal: React.FC<AlertModalProps> = ({ children, onClose }) => {
   );
 };
 
-export default AlertModal; 
+export default AlertModal;

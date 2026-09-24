@@ -1,4 +1,4 @@
-import { Collection, ObjectId } from 'mongodb';
+import { Collection, ObjectId, Filter } from 'mongodb';
 import { getDatabase } from '../mongodb';
 
 export interface MessageDocument {
@@ -13,6 +13,11 @@ export interface MessageDocument {
   updatedAt: Date;
 }
 
+/** Only public/private channels — personal DMs (U…/D…) are excluded from automated cleanup. */
+const CHANNEL_MESSAGE_FILTER: Filter<MessageDocument> = {
+  channelId: { $regex: '^[CG]' },
+};
+
 class MessageRepository {
   private async getCollection(): Promise<Collection<MessageDocument>> {
     const db = await getDatabase();
@@ -26,7 +31,12 @@ class MessageRepository {
 
   async findOldMessages(cutoffTime: Date, limit?: number): Promise<MessageDocument[]> {
     const collection = await this.getCollection();
-    let cursor = collection.find({ createdAt: { $lt: cutoffTime } }).sort({ createdAt: 1 });
+    let cursor = collection
+      .find({
+        ...CHANNEL_MESSAGE_FILTER,
+        createdAt: { $lt: cutoffTime },
+      })
+      .sort({ createdAt: 1 });
     if (limit !== undefined) {
       cursor = cursor.limit(limit);
     }
@@ -35,7 +45,10 @@ class MessageRepository {
 
   async countOldMessages(cutoffTime: Date): Promise<number> {
     const collection = await this.getCollection();
-    return collection.countDocuments({ createdAt: { $lt: cutoffTime } });
+    return collection.countDocuments({
+      ...CHANNEL_MESSAGE_FILTER,
+      createdAt: { $lt: cutoffTime },
+    });
   }
 
   async deleteByMessageIds(messageIds: string[]): Promise<number> {

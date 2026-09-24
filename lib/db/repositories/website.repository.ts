@@ -1,5 +1,6 @@
 import { Collection, ObjectId } from 'mongodb';
 import { getDatabase } from '../mongodb';
+import { AUDIT_ACTOR_SYSTEM } from './audit-log.repository';
 
 export interface WebsiteDocument {
   _id?: ObjectId;
@@ -21,6 +22,10 @@ export interface WebsiteDocument {
     upAlerts: boolean;
     latencyAlerts: boolean;
   };
+  /** Who created the monitor record; missing → treat as "system" */
+  createdBy?: string;
+  /** Last editor email */
+  updatedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -51,24 +56,26 @@ class WebsiteRepository {
     const now = new Date();
     const document: Omit<WebsiteDocument, '_id'> = {
       ...data,
+      createdBy: data.createdBy || AUDIT_ACTOR_SYSTEM,
       createdAt: now,
       updatedAt: now,
     };
-    
+
     const result = await collection.insertOne(document as WebsiteDocument);
     return { ...document, _id: result.insertedId };
   }
 
   async update(id: number, data: Partial<WebsiteDocument>): Promise<boolean> {
     const collection = await this.getCollection();
+    const { createdBy: _createdBy, ...rest } = data;
     const result = await collection.updateOne(
       { id },
-      { 
+      {
         $set: {
-          ...data,
+          ...rest,
           updatedAt: new Date(),
-        }
-      }
+        },
+      },
     );
     return result.modifiedCount > 0;
   }
@@ -79,28 +86,37 @@ class WebsiteRepository {
     return result.deletedCount > 0;
   }
 
-  async upsert(id: number, data: Partial<WebsiteDocument>): Promise<WebsiteDocument> {
+  /**
+   * Upsert website. `createdBy` is only applied on insert (defaults to system).
+   * Never overwrites existing createdBy on update.
+   */
+  async upsert(
+    id: number,
+    data: Partial<WebsiteDocument>,
+  ): Promise<WebsiteDocument> {
     const collection = await this.getCollection();
     const now = new Date();
-    
+    const { createdBy, ...setFields } = data;
+
     const result = await collection.findOneAndUpdate(
       { id },
-      { 
+      {
         $set: {
-          ...data,
+          ...setFields,
           updatedAt: now,
         },
         $setOnInsert: {
           id,
           createdAt: now,
-        }
+          createdBy: createdBy || AUDIT_ACTOR_SYSTEM,
+        },
       },
-      { 
+      {
         upsert: true,
-        returnDocument: 'after'
-      }
+        returnDocument: 'after',
+      },
     );
-    
+
     return result!;
   }
 }

@@ -10,35 +10,57 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    // Get pagination and search parameters from query
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const search = ((req.query.search as string) || '').toLowerCase();
+    const statusFilter = ((req.query.status as string) || 'all').toLowerCase();
 
     // Fetch all monitors from UptimeRobot
     const allMonitors = await fetchMonitors();
 
+    // Load MongoDB records for ownership / merge (needed before pagination for not-owned)
+    const allDbWebsites = await websiteRepository.findByIds(
+      allMonitors.map((m) => m.id),
+    );
+    const dbWebsitesMap = new Map(allDbWebsites.map((w) => [w.id, w]));
+
+    const hasAlertContacts = (monitorId: number): boolean => {
+      const dbData = dbWebsitesMap.get(monitorId);
+      const users = dbData?.alertContacts?.slack?.users ?? [];
+      const channels = dbData?.alertContacts?.slack?.channels ?? [];
+      return users.length > 0 || channels.length > 0;
+    };
+
     // Filter by search if provided
     let filteredMonitors = allMonitors;
     if (search) {
-      filteredMonitors = allMonitors.filter(monitor => 
-        monitor.friendly_name.toLowerCase().includes(search) ||
-        monitor.url.toLowerCase().includes(search)
+      filteredMonitors = filteredMonitors.filter(
+        (monitor) =>
+          monitor.friendly_name.toLowerCase().includes(search) ||
+          monitor.url.toLowerCase().includes(search),
+      );
+    }
+
+    // Filter by status: down = LOOKS_DOWN (8) or DOWN (9)
+    if (statusFilter === 'down') {
+      filteredMonitors = filteredMonitors.filter(
+        (monitor) => monitor.status === 8 || monitor.status === 9,
+      );
+    }
+
+    // Not owned = no Slack users or channels subscribed
+    if (statusFilter === 'not-owned' || statusFilter === 'not_owned') {
+      filteredMonitors = filteredMonitors.filter(
+        (monitor) => !hasAlertContacts(monitor.id),
       );
     }
 
     // Apply pagination
     const total = filteredMonitors.length;
+    const totalAll = allMonitors.length;
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const paginatedMonitors = filteredMonitors.slice(startIndex, endIndex);
-
-    const websiteIds = paginatedMonitors.map((m) => m.id);
-
-    // Fetch website data from MongoDB using repository
-    const dbWebsites = await websiteRepository.findByIds(websiteIds);
-
-    const dbWebsitesMap = new Map(dbWebsites.map(w => [w.id, w]));
 
     // Merge data
     const mergedData = paginatedMonitors.map((monitor) => {
@@ -49,10 +71,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         url: dbData?.url || monitor.url,
         alertContacts: dbData?.alertContacts || null,
         group: dbData?.group || null,
+        createdBy: dbData?.createdBy || 'system',
       };
     });
 
-    sendSuccess(res, mergedData, { total, page, limit });
+    sendSuccess(res, mergedData, { total, totalAll, page, limit });
   } catch (error) {
     console.error('Error in websites API:', error);
     throw error;

@@ -6,7 +6,6 @@ export interface Website {
   url: string;
   type?: number;
   status?: number;
-  uptime_ratio?: number;
   alertContacts?: {
     slack: {
       users: string[];
@@ -18,6 +17,13 @@ export interface Website {
     name: string;
   };
   friendlyName?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  notificationPreferences?: {
+    downAlerts: boolean;
+    upAlerts: boolean;
+    latencyAlerts: boolean;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -54,7 +60,6 @@ export interface UptimeRobotMonitor {
   url: string;
   type: number;
   status: number;
-  uptime_ratio: number;
 }
 
 export interface WebhookData {
@@ -140,4 +145,6 @@ export interface Message extends Omit<MessageRecord, 'messageId'> {
   messageId: string;
   createdAt: Date;
   updatedAt: Date;
+  websiteUrl?: string;
+  websiteName?: string;
 } 

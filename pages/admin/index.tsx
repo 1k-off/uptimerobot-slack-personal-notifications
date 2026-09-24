@@ -7,32 +7,18 @@ import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 import {
   Activity,
   Bell,
-  Zap,
   Send,
   CheckCircle,
   ArrowRight,
-  Hash,
-  Lock,
-  ExternalLink,
-  Search,
   UserMinus,
 } from "lucide-react";
 import { Session } from "@/types";
 import Header from "@/components/Header";
 
-interface SlackChannel {
-  id: string;
-  name: string;
-}
-
 interface Metrics {
   totalMonitors: number;
   activeAlerts: number;
-  connectedChannels: number;
-  apiUptime: number;
-  monitorTrend: string;
-  alertSeverity: string;
-  recentMessages: number;
+  alertSeverity: "Healthy" | "Degraded" | "Down";
 }
 
 export default function AdminPage() {
@@ -43,8 +29,6 @@ export default function AdminPage() {
   const [message, setMessage] = useState(
     "This is a system test message from the Admin Dashboard. Current system health: 100%.",
   );
-  const [channelSearch, setChannelSearch] = useState("");
-  const [channels, setChannels] = useState<SlackChannel[]>([]);
 
   // State for storing selected user and channel IDs
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -54,31 +38,14 @@ export default function AdminPage() {
   const [metrics, setMetrics] = useState<Metrics>({
     totalMonitors: 0,
     activeAlerts: 0,
-    connectedChannels: 0,
-    apiUptime: 100,
-    monitorTrend: '+0%',
-    alertSeverity: 'Normal',
-    recentMessages: 0,
+    alertSeverity: "Healthy",
   });
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [pruneLoading, setPruneLoading] = useState(false);
 
   useEffect(() => {
-    fetchChannels();
     fetchMetrics();
   }, []);
-
-  const fetchChannels = async () => {
-    try {
-      const response = await fetch("/api/slackChannels");
-      if (response.ok) {
-        const data = await response.json();
-        setChannels(data.success ? data.data : data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch channels:", error);
-    }
-  };
 
   const fetchMetrics = async () => {
     try {
@@ -97,10 +64,6 @@ export default function AdminPage() {
       setMetricsLoading(false);
     }
   };
-
-  const filteredChannels = channels.filter((channel) =>
-    channel.name.toLowerCase().includes(channelSearch.toLowerCase()),
-  );
 
   if (status === "loading") {
     return (
@@ -199,287 +162,166 @@ export default function AdminPage() {
       <Header currentPage="admin" />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
         {/* Page Header */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-              <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 text-[10px] font-bold uppercase tracking-wider rounded border border-amber-500/20">
-                System Administrator
-              </span>
-            </div>
-            <p className="text-zinc-400">
-              Manage system-wide integration settings and monitor delivery
-              health.
-            </p>
-          </div>
+        <div className="mb-5">
+          <h1 className="text-xl font-semibold tracking-tight">Admin</h1>
         </div>
 
         {/* System Metrics/Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="p-6 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800">
-            <div className="flex justify-between items-start mb-4">
-              <Activity className="w-6 h-6 text-blue-500" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+          <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800">
+            <div className="flex justify-between items-start mb-2">
+              <Activity className="w-5 h-5 text-blue-500" />
               <span className="text-[10px] font-bold text-blue-500 uppercase">
                 Total Monitors
               </span>
             </div>
             <div className="flex items-baseline gap-2">
               {metricsLoading ? (
-                <div className="h-9 w-24 bg-[var(--bg-subtle)] animate-pulse rounded" />
+                <div className="h-8 w-20 bg-[var(--bg-subtle)] animate-pulse rounded" />
               ) : (
-                <>
-                  <h3 className="text-3xl font-bold">{metrics.totalMonitors.toLocaleString()}</h3>
-                  <span className={`text-xs font-medium ${
-                    metrics.monitorTrend.startsWith('+') ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    {metrics.monitorTrend}
-                  </span>
-                </>
+                <h3 className="text-2xl font-bold">
+                  {metrics.totalMonitors.toLocaleString()}
+                </h3>
               )}
             </div>
           </div>
 
-          <div className="p-6 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800">
-            <div className="flex justify-between items-start mb-4">
-              <Bell className="w-6 h-6 text-amber-500" />
+          <div className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800">
+            <div className="flex justify-between items-start mb-2">
+              <Bell className="w-5 h-5 text-amber-500" />
               <span className="text-[10px] font-bold text-amber-500 uppercase">
                 Active Alerts
               </span>
             </div>
             <div className="flex items-baseline gap-2">
               {metricsLoading ? (
-                <div className="h-9 w-24 bg-[var(--bg-subtle)] animate-pulse rounded" />
+                <div className="h-8 w-20 bg-[var(--bg-subtle)] animate-pulse rounded" />
               ) : (
                 <>
-                  <h3 className="text-3xl font-bold">{metrics.activeAlerts}</h3>
-                  <span className={`text-xs font-medium ${
-                    metrics.alertSeverity === 'Critical' ? 'text-red-500' :
-                    metrics.alertSeverity === 'Warning' ? 'text-amber-500' :
-                    'text-green-500'
-                  }`}>
+                  <h3 className="text-2xl font-bold">{metrics.activeAlerts}</h3>
+                  <span
+                    className={`text-xs font-medium ${
+                      metrics.alertSeverity === "Down"
+                        ? "text-red-500"
+                        : metrics.alertSeverity === "Degraded"
+                          ? "text-amber-500"
+                          : "text-green-500"
+                    }`}
+                  >
                     {metrics.alertSeverity}
                   </span>
                 </>
               )}
             </div>
           </div>
-
-          <div className="p-6 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800">
-            <div className="flex justify-between items-start mb-4">
-              <svg
-                className="w-6 h-6"
-                viewBox="0 0 127 127"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M27.2 80c0 7.3-5.9 13.2-13.2 13.2C6.7 93.2.8 87.3.8 80c0-7.3 5.9-13.2 13.2-13.2h13.2V80z"
-                  fill="#A855F7"
-                />
-                <path
-                  d="M47 27c-7.3 0-13.2-5.9-13.2-13.2C33.8 6.5 39.7.6 47 .6c7.3 0 13.2 5.9 13.2 13.2V27H47z"
-                  fill="#A855F7"
-                />
-              </svg>
-              <span className="text-[10px] font-bold text-purple-500 uppercase">
-                Channels Connected
-              </span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              {metricsLoading ? (
-                <div className="h-9 w-24 bg-[var(--bg-subtle)] animate-pulse rounded" />
-              ) : (
-                <>
-                  <h3 className="text-3xl font-bold">{metrics.connectedChannels}</h3>
-                  <span className="text-xs text-zinc-400 font-medium">
-                    1 Workspace
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="p-6 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800">
-            <div className="flex justify-between items-start mb-4">
-              <Zap className="w-6 h-6 text-green-500" />
-              <span className="text-[10px] font-bold text-green-500 uppercase">
-                API Uptime %
-              </span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              {metricsLoading ? (
-                <div className="h-9 w-24 bg-[var(--bg-subtle)] animate-pulse rounded" />
-              ) : (
-                <>
-                  <h3 className="text-3xl font-bold">{metrics.apiUptime}</h3>
-                  <span className="text-xs text-green-500 font-medium">Stable</span>
-                </>
-              )}
-            </div>
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Slack Integration Test */}
-            <section className="p-8 rounded-2xl bg-[var(--bg-elevated)] border border-zinc-800">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Send className="w-5 h-5 text-blue-500" />
-                </div>
-                <h2 className="text-xl font-bold">Slack Integration Test</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+          {/* Slack Integration Test */}
+          <section className="p-5 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800 h-full flex flex-col">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                <Send className="w-4 h-4 text-blue-500" />
               </div>
+              <h2 className="text-base font-semibold">Slack Integration Test</h2>
+            </div>
 
-              <div className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1 space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                      Target Channels
-                    </label>
-                    <MultiSelectDropdown
-                      apiEndpoint="/api/slackChannels"
-                      placeholder="Select channels..."
-                      selectedPlaceholder="channel(s)"
-                      labelKey="name"
-                      idKey="id"
-                      selectedItems={selectedChannels}
-                      setSelectedItems={setSelectedChannels}
-                    />
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                      Target Users
-                    </label>
-                    <MultiSelectDropdown
-                      apiEndpoint="/api/slackUsers"
-                      placeholder="Select users..."
-                      selectedPlaceholder="user(s)"
-                      labelKey="name"
-                      idKey="id"
-                      selectedItems={selectedUsers}
-                      setSelectedItems={setSelectedUsers}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                    Message Content
-                  </label>
-                  <textarea
-                    placeholder="Type a test message here..."
-                    rows={4}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="w-full border border-zinc-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-                  />
-                </div>
-
-                <div className="pt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-500">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-xs font-medium">Ready to send</span>
-                  </div>
-                  <button
-                    onClick={handleTestSlackMessage}
-                    disabled={loading}
-                    className="px-8 py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-all flex items-center gap-2 shadow-lg shadow-white/5 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Sending..." : "Send Test Message"}
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {result && (
-                  <Alert className="mt-4 bg-green-500/10 border-green-500/20 text-green-500">
-                    <AlertDescription>
-                      <pre className="whitespace-pre-wrap text-xs">
-                        {JSON.stringify(result, null, 2)}
-                      </pre>
-                    </AlertDescription>
-                  </Alert>
-                )}
+            <div className="space-y-4 flex-1 flex flex-col">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                  Target Channels
+                </label>
+                <MultiSelectDropdown
+                  apiEndpoint="/api/slackChannels"
+                  placeholder="Select channels..."
+                  selectedPlaceholder="channel(s)"
+                  labelKey="name"
+                  idKey="id"
+                  selectedItems={selectedChannels}
+                  setSelectedItems={setSelectedChannels}
+                />
               </div>
-            </section>
-
-            <section className="p-8 rounded-2xl bg-[var(--bg-elevated)] border border-zinc-800">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-amber-500/10 rounded-lg">
-                  <UserMinus className="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Subscription maintenance</h2>
-                  <p className="text-sm text-zinc-400 mt-1">
-                    Remove deactivated Slack users from all monitor alert
-                    contacts. Does not affect message cleanup.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handlePruneDeactivatedUsers}
-                disabled={pruneLoading}
-                className="px-6 py-3 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold rounded-lg hover:bg-amber-500/20 transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-              >
-                {pruneLoading ? "Pruning..." : "Prune deactivated users"}
-              </button>
-            </section>
-          </div>
-
-          {/* Sidebar: Connected Channels */}
-          <aside className="space-y-6">
-            <div className="p-6 rounded-2xl bg-[var(--bg-elevated)] border border-zinc-800 h-full flex flex-col">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-bold">Connected Channels</h2>
-                <span className="text-xs font-bold text-zinc-400 px-2 py-0.5 bg-white/5 rounded">
-                  {channels.length} TOTAL
-                </span>
-              </div>
-
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-2.5 text-zinc-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Filter channels..."
-                  value={channelSearch}
-                  onChange={(e) => setChannelSearch(e.target.value)}
-                  className="w-full border border-zinc-800 rounded-lg pl-9 pr-4 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                  Target Users
+                </label>
+                <MultiSelectDropdown
+                  apiEndpoint="/api/slackUsers"
+                  placeholder="Select users..."
+                  selectedPlaceholder="user(s)"
+                  labelKey="name"
+                  idKey="id"
+                  selectedItems={selectedUsers}
+                  setSelectedItems={setSelectedUsers}
                 />
               </div>
 
-              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
-                {filteredChannels.map((channel) => (
-                  <div
-                    key={channel.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      {channel.name.includes("admin") ||
-                      channel.name.includes("private") ? (
-                        <Lock className="w-4 h-4 text-zinc-400" />
-                      ) : (
-                        <Hash className="w-4 h-4 text-zinc-400" />
-                      )}
-                      <span className="text-sm">{channel.name}</span>
-                    </div>
-                    <ExternalLink className="w-3 h-3 text-zinc-400" />
-                  </div>
-                ))}
+              <div className="space-y-2 flex-1 flex flex-col">
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                  Message Content
+                </label>
+                <textarea
+                  placeholder="Type a test message here..."
+                  rows={3}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full flex-1 min-h-[5.5rem] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                />
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-800">
+              <div className="pt-1 flex flex-wrap items-center justify-between gap-3 mt-auto">
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-500">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span className="text-xs font-medium">Ready to send</span>
+                </div>
                 <button
-                  onClick={fetchChannels}
-                  className="w-full py-2 bg-[var(--bg-subtle)] border border-zinc-700 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-zinc-700 transition-all cursor-pointer"
+                  onClick={handleTestSlackMessage}
+                  disabled={loading}
+                  className="px-5 py-2 bg-white text-black text-sm font-semibold rounded-lg hover:bg-gray-200 transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  Force Re-Sync
+                  {loading ? "Sending..." : "Send Test Message"}
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
+
+              {result && (
+                <Alert className="mt-2 bg-green-500/10 border-green-500/20 text-green-500">
+                  <AlertDescription>
+                    <pre className="whitespace-pre-wrap text-xs">
+                      {JSON.stringify(result, null, 2)}
+                    </pre>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
-          </aside>
+          </section>
+
+          <section className="p-5 rounded-xl bg-[var(--bg-elevated)] border border-zinc-800 h-full flex flex-col">
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="p-1.5 bg-amber-500/10 rounded-lg shrink-0">
+                <UserMinus className="w-4 h-4 text-amber-500" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold">
+                  Subscription maintenance
+                </h2>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Remove deactivated Slack users from all monitor alert
+                  contacts. Does not affect message cleanup.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handlePruneDeactivatedUsers}
+              disabled={pruneLoading}
+              className="mt-auto self-start px-4 py-2 text-sm bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold rounded-lg hover:bg-amber-500/20 transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+            >
+              {pruneLoading ? "Pruning..." : "Prune deactivated users"}
+            </button>
+          </section>
         </div>
       </main>
     </div>

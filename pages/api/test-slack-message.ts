@@ -1,6 +1,7 @@
 import { WebClient } from '@slack/web-api';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { withErrorHandler } from '@/lib/api/response';
+import { requireAdminSession } from '@/lib/api/require-admin';
 
 interface TestSlackMessageRequest {
     users?: string[];
@@ -21,6 +22,10 @@ async function handler(
 ) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    if (!(await requireAdminSession(req, res))) {
+        return;
     }
 
     const { users = [], channels = [] } = req.body as TestSlackMessageRequest;

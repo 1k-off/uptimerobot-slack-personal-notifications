@@ -2,6 +2,8 @@ import { getSlackClient } from '@/lib/services/slack-client';
 import { getEnvConfig } from '@/lib/config';
 import type { WebClient } from '@slack/web-api';
 
+export { isSlackChannelId } from '@/lib/slack-ids';
+
 interface SlackNotificationParams {
   action: 'created' | 'deleted';
   url: string;
