@@ -76,9 +76,17 @@ interface V3PaginatedMonitors {
   nextLink?: string | null;
 }
 
-interface V3AlertContact {
+/** Webhook / Slack / etc. from GET /integrations (not legacy alert-contacts). */
+interface V3Integration {
   id: number;
   friendlyName: string | null;
+  type?: string;
+  status?: string;
+}
+
+interface V3PaginatedIntegrations {
+  data?: V3Integration[];
+  nextLink?: string | null;
 }
 
 interface NewMonitorParams {
@@ -328,9 +336,10 @@ export async function getMonitor(id: number): Promise<UptimeRobotMonitor> {
 export async function newMonitor(
   params: NewMonitorParams,
 ): Promise<V3Monitor> {
-  const alertContactIds = await getAlertContactsByNames();
+  const integrationIds = await getDefaultIntegrationIds();
 
-  const assignedAlertContacts: V3AssignedAlertContact[] = alertContactIds.map(
+  // Integrations are assigned via assignedAlertContacts; 0/0 = no delay, no repeat
+  const assignedAlertContacts: V3AssignedAlertContact[] = integrationIds.map(
     (id) => ({
       alertContactId: id,
       threshold: 0,
@@ -402,47 +411,87 @@ export async function deleteMonitor(
   });
 }
 
-export async function getAlertContactsByNames(): Promise<number[]> {
+/**
+ * Resolve integration IDs for UPTIMEROBOT_ALERT_CONTACT_NAMES from
+ * GET /integrations (Webhook, Slack, …). Legacy /user/alert-contacts is not used.
+ */
+export async function getDefaultIntegrationIds(): Promise<number[]> {
   const config = getEnvConfig();
-  getApiKey();
+  const apiKey = getApiKey();
 
-  if (!config.uptimeRobotAlertContactNames.length) {
+  const wantedNames = config.uptimeRobotAlertContactNames;
+  if (!wantedNames.length) {
     console.warn(
-      "No alert contact names specified in UPTIMEROBOT_ALERT_CONTACT_NAMES",
+      "No integration names specified in UPTIMEROBOT_ALERT_CONTACT_NAMES",
     );
     return [];
   }
 
+  const wantedLower = new Set(wantedNames.map((name) => name.toLowerCase()));
+
   try {
-    const contacts = await uptimeRobotRequest<V3AlertContact[]>(
-      "/user/alert-contacts",
-    );
+    const allIntegrations: V3Integration[] = [];
+    let cursor: number | null = null;
 
-    const matchingContacts = (contacts || [])
-      .filter(
-        (contact) =>
-          !!contact.friendlyName &&
-          config.uptimeRobotAlertContactNames.includes(contact.friendlyName),
-      )
-      .map((contact) => contact.id);
-
-    if (matchingContacts.length < config.uptimeRobotAlertContactNames.length) {
-      const foundNames = (contacts || [])
-        .filter(
-          (contact) =>
-            !!contact.friendlyName &&
-            config.uptimeRobotAlertContactNames.includes(contact.friendlyName),
-        )
-        .map((contact) => contact.friendlyName as string);
-      const missingNames = config.uptimeRobotAlertContactNames.filter(
-        (name) => !foundNames.includes(name),
+    do {
+      const params = new URLSearchParams();
+      if (cursor !== null) {
+        params.set("cursor", String(cursor));
+      }
+      const qs = params.toString();
+      const page = await uptimeRobotRequest<V3PaginatedIntegrations>(
+        qs ? `/integrations?${qs}` : "/integrations",
+        { apiKey },
       );
-      console.warn("Some alert contact names were not found:", missingNames);
+
+      const pageData = page.data || [];
+      allIntegrations.push(...pageData);
+
+      cursor = cursorFromNextLink(page.nextLink);
+      if (!page.nextLink || pageData.length === 0) {
+        cursor = null;
+      }
+    } while (cursor !== null);
+
+    const matching = allIntegrations.filter((integration) => {
+      const name = integration.friendlyName?.trim();
+      return !!name && wantedLower.has(name.toLowerCase());
+    });
+
+    const foundLower = new Set(
+      matching
+        .map((i) => i.friendlyName?.trim().toLowerCase())
+        .filter((n): n is string => !!n),
+    );
+    const missingNames = wantedNames.filter(
+      (name) => !foundLower.has(name.toLowerCase()),
+    );
+    if (missingNames.length) {
+      console.warn(
+        "Some default integration names were not found:",
+        missingNames,
+      );
     }
 
-    return matchingContacts;
+    // Preserve env order when possible
+    const byLowerName = new Map<string, number>();
+    for (const integration of matching) {
+      const key = integration.friendlyName!.trim().toLowerCase();
+      if (!byLowerName.has(key)) {
+        byLowerName.set(key, integration.id);
+      }
+    }
+
+    return wantedNames
+      .map((name) => byLowerName.get(name.toLowerCase()))
+      .filter((id): id is number => id !== undefined);
   } catch (error) {
-    console.error("Error fetching alert contacts:", error);
+    console.error("Error fetching integrations:", error);
     throw error;
   }
+}
+
+/** @deprecated Prefer getDefaultIntegrationIds — same behavior. */
+export async function getAlertContactsByNames(): Promise<number[]> {
+  return getDefaultIntegrationIds();
 }

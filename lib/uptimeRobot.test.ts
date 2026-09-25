@@ -19,7 +19,7 @@ import {
   deleteMonitor,
   editMonitor,
   fetchMonitors,
-  getAlertContactsByNames,
+  getDefaultIntegrationIds,
   getMonitor,
   mapV3MonitorToLegacy,
   mapV3StatusToLegacy,
@@ -192,14 +192,22 @@ describe("UptimeRobot v3 client", () => {
     });
   });
 
-  it("newMonitor creates a KEYWORD monitor with alert contacts", async () => {
+  it("newMonitor creates a KEYWORD monitor with default integrations", async () => {
+    mockConfig({
+      uptimeRobotAlertContactNames: ["ucc", "alerts"],
+    });
+
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
-        jsonResponse([
-          { id: 11, friendlyName: "Slack Alerts" },
-          { id: 12, friendlyName: "Other" },
-        ]),
+        jsonResponse({
+          data: [
+            { id: 11, friendlyName: "ucc", type: "Webhook" },
+            { id: 12, friendlyName: "Other" },
+            { id: 13, friendlyName: "alerts", type: "Slack" },
+          ],
+          nextLink: null,
+        }),
       )
       .mockResolvedValueOnce(
         jsonResponse({
@@ -221,7 +229,7 @@ describe("UptimeRobot v3 client", () => {
     });
 
     expect(fetchMock.mock.calls[0][0]).toBe(
-      "https://api.uptimerobot.com/v3/user/alert-contacts",
+      "https://api.uptimerobot.com/v3/integrations",
     );
     expect(fetchMock.mock.calls[1][0]).toBe(
       "https://api.uptimerobot.com/v3/monitors",
@@ -249,6 +257,7 @@ describe("UptimeRobot v3 client", () => {
       domainExpirationReminder: true,
       assignedAlertContacts: [
         { alertContactId: 11, threshold: 0, recurrence: 0 },
+        { alertContactId: 13, threshold: 0, recurrence: 0 },
       ],
     });
     expect(created.id).toBe(99);
@@ -286,7 +295,7 @@ describe("UptimeRobot v3 client", () => {
   it("newMonitor creates an HTTP monitor when keyword is empty", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse({ data: [], nextLink: null }))
       .mockResolvedValueOnce(
         jsonResponse({
           id: 100,
@@ -348,23 +357,80 @@ describe("UptimeRobot v3 client", () => {
     );
   });
 
-  it("getAlertContactsByNames filters by configured names", async () => {
+  it("getDefaultIntegrationIds filters by configured names (case-insensitive)", async () => {
     mockConfig({
-      uptimeRobotAlertContactNames: ["Alpha", "Beta"],
+      uptimeRobotAlertContactNames: ["ucc", "Alerts"],
     });
 
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        jsonResponse([
-          { id: 1, friendlyName: "Alpha" },
-          { id: 2, friendlyName: "Gamma" },
-          { id: 3, friendlyName: "Beta" },
-        ]),
+        jsonResponse({
+          data: [
+            { id: 1, friendlyName: "UCC" },
+            { id: 2, friendlyName: "Gamma" },
+            { id: 3, friendlyName: "alerts" },
+          ],
+          nextLink: null,
+        }),
       ),
     );
 
-    await expect(getAlertContactsByNames()).resolves.toEqual([1, 3]);
+    await expect(getDefaultIntegrationIds()).resolves.toEqual([1, 3]);
+  });
+
+  it("getDefaultIntegrationIds paginates integrations", async () => {
+    mockConfig({
+      uptimeRobotAlertContactNames: ["ucc", "alerts"],
+    });
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: [{ id: 1, friendlyName: "ucc" }],
+          nextLink: "https://api.uptimerobot.com/v3/integrations?cursor=2",
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: [{ id: 2, friendlyName: "alerts" }],
+          nextLink: null,
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getDefaultIntegrationIds()).resolves.toEqual([1, 2]);
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://api.uptimerobot.com/v3/integrations",
+    );
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "https://api.uptimerobot.com/v3/integrations?cursor=2",
+    );
+  });
+
+  it("warns when configured integration names are missing", async () => {
+    mockConfig({
+      uptimeRobotAlertContactNames: ["ucc", "missing"],
+    });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          data: [{ id: 1, friendlyName: "ucc" }],
+          nextLink: null,
+        }),
+      ),
+    );
+
+    await expect(getDefaultIntegrationIds()).resolves.toEqual([1]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Some default integration names were not found:",
+      ["missing"],
+    );
+    warnSpy.mockRestore();
   });
 
   it("throws UptimeRobotError on API failure", async () => {
