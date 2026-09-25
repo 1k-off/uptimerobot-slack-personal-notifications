@@ -38,6 +38,7 @@ export function actorFromSession(session: Session | null | undefined): string {
     | {
         email?: string | null;
         upn?: string | null;
+        preferred_username?: string | null;
         name?: string | null;
       }
     | undefined;
@@ -47,6 +48,9 @@ export function actorFromSession(session: Session | null | undefined): string {
 
   const upn = user?.upn?.trim();
   if (upn) return upn;
+
+  const preferred = user?.preferred_username?.trim();
+  if (preferred) return preferred;
 
   // Last resort: some Azure AD sessions put UPN-like values on name
   const name = user?.name?.trim();

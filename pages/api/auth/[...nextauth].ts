@@ -1,22 +1,10 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import AzureADProvider from "next-auth/providers/azure-ad";
-
-type AzureProfile = {
-  roles?: string[];
-  groups?: string[];
-  email?: string;
-  preferred_username?: string;
-  upn?: string;
-};
-
-function resolveActorEmail(profile: AzureProfile | undefined): string {
-  return (
-    profile?.email?.trim() ||
-    profile?.upn?.trim() ||
-    profile?.preferred_username?.trim() ||
-    ""
-  );
-}
+import {
+  decodeIdTokenClaims,
+  resolveActorIdentity,
+  type AzureActorClaims,
+} from "@/lib/auth/actor";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -29,18 +17,50 @@ export const authOptions: NextAuthOptions = {
           scope: "openid profile email offline_access",
         },
       },
+      // Default Azure AD profile() only maps email/name — fill email from UPN
+      // when the tenant omits the optional email claim.
+      profile(profile) {
+        const claims = profile as AzureActorClaims & { sub?: string };
+        const email =
+          resolveActorIdentity(claims) ||
+          (typeof profile.email === "string" ? profile.email : undefined);
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: email || null,
+          image: null,
+        };
+      },
     }),
   ],
   callbacks: {
-    async jwt({ token, profile }) {
-      if (profile) {
-        const profileData = profile as AzureProfile;
-        token.roles = profileData.roles || [];
-        token.groups = profileData.groups || [];
+    async jwt({ token, profile, account, user }) {
+      if (profile || account || user) {
+        const fromProfile = resolveActorIdentity(
+          profile as AzureActorClaims | undefined,
+        );
+        const fromIdToken = resolveActorIdentity(
+          decodeIdTokenClaims(account?.id_token),
+        );
+        const fromUser =
+          typeof user?.email === "string" ? user.email.trim() : "";
+        const fromToken =
+          typeof token.email === "string" ? token.email.trim() : "";
 
-        const actorEmail = resolveActorEmail(profileData);
+        const actorEmail =
+          fromProfile || fromIdToken || fromUser || fromToken || "";
+
         if (actorEmail) {
           token.email = actorEmail;
+        }
+
+        if (profile) {
+          const profileData = profile as AzureActorClaims & {
+            roles?: string[];
+            groups?: string[];
+          };
+          token.roles = profileData.roles || [];
+          token.groups = profileData.groups || [];
         }
 
         const adminEmails = process.env.ADMIN_EMAILS
