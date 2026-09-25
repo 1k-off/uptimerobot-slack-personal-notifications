@@ -2,6 +2,8 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { websiteRepository } from '@/lib/db';
 import { fetchMonitors } from '@/lib/uptimeRobot';
 import { withErrorHandler, sendSuccess, sendError } from '@/lib/api';
+import { getSlackUsersSnapshot } from '@/lib/services/slack-users';
+import { getSlackChannelsList } from '@/lib/services/slack-channels';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -12,7 +14,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
-    const search = ((req.query.search as string) || '').toLowerCase();
+    const search = ((req.query.search as string) || '').toLowerCase().trim();
     const statusFilter = ((req.query.status as string) || 'all').toLowerCase();
 
     // Fetch all monitors from UptimeRobot
@@ -31,14 +33,67 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return users.length > 0 || channels.length > 0;
     };
 
+    // Resolve Slack contact names for search (users + channels)
+    const contactLabels = new Map<string, string>();
+    if (search) {
+      try {
+        const [usersSnapshot, channels] = await Promise.all([
+          getSlackUsersSnapshot(),
+          getSlackChannelsList(),
+        ]);
+        for (const user of usersSnapshot.activeUsers) {
+          contactLabels.set(user.id.toLowerCase(), user.name.toLowerCase());
+        }
+        for (const channel of channels) {
+          contactLabels.set(
+            channel.id.toLowerCase(),
+            channel.name.toLowerCase(),
+          );
+        }
+      } catch (error) {
+        console.warn(
+          'Alert-contact search: failed to load Slack contacts',
+          error,
+        );
+      }
+    }
+
+    const matchesAlertContacts = (monitorId: number): boolean => {
+      const dbData = dbWebsitesMap.get(monitorId);
+      const users = dbData?.alertContacts?.slack?.users ?? [];
+      const channels = dbData?.alertContacts?.slack?.channels ?? [];
+      const ids = [...users, ...channels];
+
+      const needle = search.startsWith('#') ? search.slice(1) : search;
+
+      return ids.some((id) => {
+        const idLower = id.toLowerCase();
+        if (idLower.includes(needle)) return true;
+        const label = contactLabels.get(idLower);
+        return Boolean(label && label.includes(needle));
+      });
+    };
+
     // Filter by search if provided
     let filteredMonitors = allMonitors;
     if (search) {
-      filteredMonitors = filteredMonitors.filter(
-        (monitor) =>
-          monitor.friendly_name.toLowerCase().includes(search) ||
-          monitor.url.toLowerCase().includes(search),
-      );
+      filteredMonitors = filteredMonitors.filter((monitor) => {
+        const dbData = dbWebsitesMap.get(monitor.id);
+        const name = (
+          dbData?.friendlyName ||
+          monitor.friendly_name ||
+          ''
+        ).toLowerCase();
+        const url = (dbData?.url || monitor.url || '').toLowerCase();
+        const groupName = (dbData?.group?.name || '').toLowerCase();
+
+        return (
+          name.includes(search) ||
+          url.includes(search) ||
+          groupName.includes(search) ||
+          matchesAlertContacts(monitor.id)
+        );
+      });
     }
 
     // Filter by status: down = LOOKS_DOWN (8) or DOWN (9)

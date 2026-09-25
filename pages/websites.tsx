@@ -233,18 +233,6 @@ const Websites = () => {
     );
   };
 
-  const handleDeleteMonitor = (website: Website) => {
-    setModalContent(
-      <MonitorForm
-        action="deleteMonitor"
-        monitorId={website.id}
-        websiteUrl={website.url}
-        websiteName={website.friendly_name}
-        onClose={() => setModalContent(null)}
-      />,
-    );
-  };
-
   // Helper functions to get user/channel names
   const getUserNameById = (id: string): string => {
     const user = userOptions.find((u) => u.id === id);
@@ -366,7 +354,7 @@ const Websites = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search websites by name or URL..."
+                placeholder="Search by name, URL, group, or alert contact..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-xl py-3 pl-11 pr-10 placeholder:text-[var(--text-secondary)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--text-primary)_12%,transparent)] focus:border-[color-mix(in_srgb,var(--text-primary)_35%,transparent)] transition-all"
@@ -589,13 +577,6 @@ const Websites = () => {
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => handleDeleteMonitor(website)}
-                      className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors cursor-pointer"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                   </div>
                 </div>
@@ -730,10 +711,10 @@ const MonitorForm = ({
       const endpoint = "/api/uptimeRobot";
 
       if (action === "newMonitor") {
-        if (!url || !keyword) {
+        if (!url) {
           setResult({
             success: false,
-            message: "URL and keyword are required.",
+            message: "URL is required.",
           });
           setSubmitting(false);
           return;
@@ -741,7 +722,7 @@ const MonitorForm = ({
         payload = {
           action: "newMonitor",
           url,
-          keyword_value: keyword,
+          ...(keyword.trim() ? { keyword_value: keyword.trim() } : {}),
         };
       } else if (action === "deleteMonitor") {
         if (!monitorId) {
@@ -853,14 +834,14 @@ const MonitorForm = ({
               htmlFor="keyword"
               className="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide"
             >
-              Keyword
+              Keyword{" "}
+              <span className="normal-case font-normal">(optional)</span>
             </label>
             <input
               id="keyword"
               name="keyword"
               type="text"
-              required
-              placeholder="Text to monitor on the page"
+              placeholder="Leave empty for HTTP check"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               className="ds-input"
@@ -869,6 +850,9 @@ const MonitorForm = ({
               data-lpignore="true"
               data-form-type="other"
             />
+            <p className="text-xs text-[var(--text-secondary)]">
+              With a keyword — KEYWORD monitor. Without — plain HTTP.
+            </p>
           </div>
 
           <div className="flex items-center justify-end gap-2 mt-10">

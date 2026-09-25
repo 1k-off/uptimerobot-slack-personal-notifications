@@ -283,6 +283,60 @@ describe("UptimeRobot v3 client", () => {
     });
   });
 
+  it("newMonitor creates an HTTP monitor when keyword is empty", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          id: 100,
+          friendlyName: "example.com",
+          url: "https://example.com",
+          type: "HTTP",
+          status: "STARTED",
+        }),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await newMonitor({
+      friendly_name: "example.com",
+      url: "https://example.com",
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[1][1].body as string);
+    expect(body).toEqual({
+      friendlyName: "example.com",
+      url: "https://example.com",
+      type: "HTTP",
+      interval: 60,
+      timeout: 30,
+      httpMethodType: "GET",
+      checkSSLErrors: true,
+      domainExpirationReminder: true,
+    });
+  });
+
+  it("editMonitor updates keyword value without changing type", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        id: 5,
+        type: "KEYWORD",
+        keywordValue: "",
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await editMonitor({
+      id: 5,
+      keyword_value: "  ",
+    });
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body as string)).toEqual({
+      keywordValue: "",
+    });
+  });
+
   it("deleteMonitor issues DELETE", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);

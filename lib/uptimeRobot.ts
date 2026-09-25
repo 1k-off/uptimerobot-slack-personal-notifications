@@ -338,23 +338,31 @@ export async function newMonitor(
     }),
   );
 
-  // Matches previous v2 behaviour: keyword_type=2 (not exists), keyword_case_type=1 (insensitive)
-  const body = {
+  const keyword = params.keyword_value?.trim() || "";
+  const shared = {
     friendlyName: params.friendly_name,
     url: params.url,
-    type: "KEYWORD",
     interval: 60,
     timeout: 30,
     httpMethodType: "GET",
-    keywordType: "ALERT_NOT_EXISTS",
-    keywordCaseType: "CaseInsensitive",
-    keywordValue: params.keyword_value || "",
     checkSSLErrors: true,
     domainExpirationReminder: true,
-    ...(assignedAlertContacts.length
-      ? { assignedAlertContacts }
-      : {}),
+    ...(assignedAlertContacts.length ? { assignedAlertContacts } : {}),
   };
+
+  // No keyword → plain HTTP monitor; with keyword → KEYWORD (alert when missing)
+  const body = keyword
+    ? {
+        ...shared,
+        type: "KEYWORD",
+        keywordType: "ALERT_NOT_EXISTS",
+        keywordCaseType: "CaseInsensitive",
+        keywordValue: keyword,
+      }
+    : {
+        ...shared,
+        type: "HTTP",
+      };
 
   return uptimeRobotRequest<V3Monitor>("/monitors", {
     method: "POST",
@@ -376,7 +384,8 @@ export async function editMonitor(
   }
 
   if (params.keyword_value !== undefined) {
-    body.keywordValue = params.keyword_value;
+    // UptimeRobot forbids changing monitor type after creation — only update value
+    body.keywordValue = params.keyword_value.trim();
   }
 
   return uptimeRobotRequest<V3Monitor>(`/monitors/${params.id}`, {

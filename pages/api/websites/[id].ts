@@ -1,7 +1,7 @@
 import { websiteRepository, auditLogRepository } from '@/lib/db';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { withErrorHandler } from '@/lib/api/response';
-import { editMonitor, getMonitor } from '@/lib/uptimeRobot';
+import { editMonitor, getMonitor, MONITOR_TYPE } from '@/lib/uptimeRobot';
 import type { Group } from '@/types';
 import {
   actorFromSession,
@@ -139,12 +139,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       let currentKeyword = '';
       let currentUrl = existing?.url || '';
       let currentName = existing?.friendlyName || '';
+      let monitorType: number | undefined;
 
       try {
         const monitor = await getMonitor(websiteId);
         currentKeyword = monitor.keyword_value || '';
         currentUrl = currentUrl || monitor.url || '';
         currentName = currentName || monitor.friendly_name || '';
+        monitorType = monitor.type;
       } catch {
         // Compare against DB-only baseline if UptimeRobot is unavailable.
       }
@@ -166,6 +168,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         keywordValue !== undefined &&
         !sameString(keywordValue, currentKeyword)
       ) {
+        const nextKeyword = (keywordValue || '').trim();
+        const isKeywordMonitor = monitorType === MONITOR_TYPE.KEYWORD;
+
+        // HTTP monitors cannot gain a keyword (type is immutable in UptimeRobot)
+        if (!isKeywordMonitor && nextKeyword) {
+          return res.status(400).json({
+            error:
+              'Cannot add a keyword to an HTTP monitor. Create a new monitor with a keyword instead.',
+          });
+        }
+
         changedFields.push('keyword');
       }
 

@@ -113,10 +113,6 @@ const EditWebsite = () => {
 
   const handleSave = async () => {
     const trimmedKeyword = keywordValue.trim();
-    if (!trimmedKeyword) {
-      toast.error("Keyword is required");
-      return;
-    }
 
     const activeUserIds = new Set(userOptions.map((u) => u.id));
     const usersToSave =
@@ -378,7 +374,9 @@ const EditWebsite = () => {
                   data-form-type="other"
                 />
                 <p className="text-xs text-[var(--text-secondary)]">
-                  Alert when this text is missing from the page response.
+                  Optional on create (empty → HTTP, set → KEYWORD). Type cannot
+                  be changed later — only the keyword text can be updated on
+                  KEYWORD monitors.
                 </p>
               </div>
               <div className="md:col-span-2 space-y-2">

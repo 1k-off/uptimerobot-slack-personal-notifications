@@ -34,5 +34,23 @@ export async function requireAuthSession(
 }
 
 export function actorFromSession(session: Session | null | undefined): string {
-  return session?.user?.email?.trim() || AUDIT_ACTOR_SYSTEM;
+  const user = session?.user as
+    | {
+        email?: string | null;
+        upn?: string | null;
+        name?: string | null;
+      }
+    | undefined;
+
+  const email = user?.email?.trim();
+  if (email) return email;
+
+  const upn = user?.upn?.trim();
+  if (upn) return upn;
+
+  // Last resort: some Azure AD sessions put UPN-like values on name
+  const name = user?.name?.trim();
+  if (name && name.includes("@")) return name;
+
+  return AUDIT_ACTOR_SYSTEM;
 }
