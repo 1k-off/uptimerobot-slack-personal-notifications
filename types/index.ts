@@ -96,8 +96,32 @@ export interface Session {
     roles: string[];
     groups: string[];
     isAdmin: boolean;
+    isAccessManager: boolean;
   };
   expires: string;
+}
+
+export interface AccessProject {
+  id: number;
+  name: string;
+}
+
+export interface AccessRecord {
+  id: number;
+  name: string;
+  userId: number;
+  userName?: string | null;
+  projectId: number | null;
+  projectName?: string | null;
+  givenBy?: string | null;
+  requestTicket?: string | null;
+  url?: string | null;
+  dateMod?: string | null;
+}
+
+export interface ProjectAutocompleteProps {
+  value: AccessProject | null;
+  onChange: (project: AccessProject | null) => void;
 }
 
 // API Response types

@@ -13,7 +13,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
-  currentPage?: "dashboard" | "monitors" | "admin" | "history" | "audit" | "edit";
+  currentPage?:
+    | "dashboard"
+    | "monitors"
+    | "admin"
+    | "history"
+    | "audit"
+    | "edit"
+    | "access-management"
+    | "access-audit";
 }
 
 function navLinkClass(active: boolean, mobile = false): string {
@@ -36,12 +44,18 @@ export default function Header({ currentPage = "dashboard" }: HeaderProps) {
   const { data: session } = useSession();
   const typedSession = session as Session | null;
   const isAdmin = typedSession?.user?.isAdmin || false;
+  const isAccessManager =
+    typedSession?.user?.isAccessManager ||
+    typedSession?.user?.isAdmin ||
+    false;
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isAdminSection =
     currentPage === "admin" ||
     currentPage === "history" ||
     currentPage === "audit";
+  const isAccessSection =
+    currentPage === "access-management" || currentPage === "access-audit";
 
   useEffect(() => {
     setMounted(true);
@@ -66,6 +80,47 @@ export default function Header({ currentPage = "dashboard" }: HeaderProps) {
             >
               Monitors
             </Link>
+            {isAccessManager && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={`inline-flex items-center gap-1 cursor-pointer ${navLinkClass(
+                    isAccessSection,
+                  )}`}
+                >
+                  Access management
+                  <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="z-[100] min-w-[12rem] border-[var(--border-color)] bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-lg"
+                >
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/access-management"
+                      className={
+                        currentPage === "access-management"
+                          ? "font-semibold text-[var(--text-primary)]"
+                          : undefined
+                      }
+                    >
+                      Users &amp; accesses
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/access-management/audit"
+                      className={
+                        currentPage === "access-audit"
+                          ? "font-semibold text-[var(--text-primary)]"
+                          : undefined
+                      }
+                    >
+                      Access audit
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {isAdmin && (
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -184,6 +239,33 @@ export default function Header({ currentPage = "dashboard" }: HeaderProps) {
               >
                 Monitors
               </Link>
+              {isAccessManager && (
+                <>
+                  <div className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Access management
+                  </div>
+                  <Link
+                    href="/access-management"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={navLinkClass(
+                      currentPage === "access-management",
+                      true,
+                    )}
+                  >
+                    Users &amp; accesses
+                  </Link>
+                  <Link
+                    href="/access-management/audit"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={navLinkClass(
+                      currentPage === "access-audit",
+                      true,
+                    )}
+                  >
+                    Access audit
+                  </Link>
+                </>
+              )}
               {isAdmin && (
                 <>
                   <div className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">

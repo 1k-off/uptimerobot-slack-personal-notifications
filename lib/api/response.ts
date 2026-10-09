@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ApiError } from './errors';
+import { GlpiApiError } from '@/lib/glpi/client';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -26,7 +27,7 @@ export function withErrorHandler<T = unknown>(
     } catch (error) {
       console.error('API Error:', error);
 
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error instanceof GlpiApiError) {
         const response: ApiResponse<T> = {
           success: false,
           error: error.message,

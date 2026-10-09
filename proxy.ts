@@ -1,6 +1,10 @@
 import { getToken } from 'next-auth/jwt';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import {
+    isAccessManagerFromClaims,
+    isAdminFromClaims,
+} from '@/lib/auth/access-manager';
 
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
@@ -31,20 +35,23 @@ export async function proxy(req: NextRequest) {
         return NextResponse.redirect(new URL('/', req.url));
     }
 
+    const claims = {
+        email: token.email as string | undefined,
+        roles: token.roles,
+        groups: token.groups,
+    };
+
     if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-        // Admin page - check for admin privileges
-        const adminEmails = process.env.ADMIN_EMAILS ?
-            process.env.ADMIN_EMAILS.split(',') : [];
-        const adminGroups = process.env.ADMIN_GROUPS ?
-            process.env.ADMIN_GROUPS.split(',') : [];
+        if (!isAdminFromClaims(claims)) {
+            return NextResponse.redirect(new URL('/unauthorized', req.url));
+        }
+    }
 
-        const isAdmin =
-            adminEmails.includes(token.email as string) ||
-            (token.groups && Array.isArray(token.groups) && token.groups.some(group => adminGroups.includes(group as string))) ||
-            (token.roles && Array.isArray(token.roles) && token.roles.includes('Admin'));
-
-        if (!isAdmin) {
-            // User is not an admin, redirect to unauthorized page
+    if (
+        pathname === '/access-management' ||
+        pathname.startsWith('/access-management/')
+    ) {
+        if (!isAccessManagerFromClaims(claims)) {
             return NextResponse.redirect(new URL('/unauthorized', req.url));
         }
     }
