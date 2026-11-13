@@ -36,6 +36,17 @@ interface EnvConfig {
   adminEmails: string[];
   adminGroups: string[];
 
+  // Access Manager
+  accessManagerEmails: string[];
+  accessManagerGroups: string[];
+
+  // GLPI (optional until Access Registry is used)
+  glpiUrl?: string;
+  glpiOauthClientId?: string;
+  glpiOauthClientSecret?: string;
+  glpiUsername?: string;
+  glpiPassword?: string;
+
   // Environment
   nodeEnv: 'development' | 'production' | 'test';
 }
@@ -113,6 +124,17 @@ function validateEnv(): EnvConfig {
     // Admin
     adminEmails: parseEnvArray(process.env.ADMIN_EMAILS),
     adminGroups: parseEnvArray(process.env.ADMIN_GROUPS),
+
+    // Access Manager
+    accessManagerEmails: parseEnvArray(process.env.ACCESS_MANAGER_EMAILS),
+    accessManagerGroups: parseEnvArray(process.env.ACCESS_MANAGER_GROUPS),
+
+    // GLPI
+    glpiUrl: process.env.GLPI_URL,
+    glpiOauthClientId: process.env.GLPI_OAUTH_CLIENT_ID,
+    glpiOauthClientSecret: process.env.GLPI_OAUTH_CLIENT_SECRET,
+    glpiUsername: process.env.GLPI_USERNAME,
+    glpiPassword: process.env.GLPI_PASSWORD,
 
     // Environment
     nodeEnv: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',

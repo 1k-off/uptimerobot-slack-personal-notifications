@@ -29,14 +29,18 @@ An in‑memory cache is used to store Slack thread details and reduce the number
 - **Message Cleanup:**  
   Automatic cleanup of old Slack messages to keep channels clean. Configurable retention period and on/off toggle.
 
+- **Access Registry:**  
+  Access Managers manage GLPI custom **Accesses** / **Projects** via a user-centric UI. Data lives in GLPI (OAuth high-level API); MongoDB stores only an access audit log. Soft-delete moves Accesses to the GLPI trash (no hard purge from the app).
+
 ## Technologies
 
 - **Next.js:** UI and API routes running on Vercel.
 - **TypeScript:** Type-safe development (supports both JS and TS).
 - **Azure Entra:** Secure user authorization via Azure App registration.
 - **Slack:** Notifications.
-- **MongoDB/Atlas:** Storage for website subscription details.
+- **MongoDB/Atlas:** Storage for website subscription details and audit logs.
 - **UptimeRobot:** Monitoring websites and sending event notifications.
+- **GLPI:** Source of truth for Access Registry (Users, custom Accesses, custom Projects).
 
 ## Installation
 
@@ -76,7 +80,18 @@ An in‑memory cache is used to store Slack thread details and reduce the number
     # Message cleanup settings (optional)
     SLACK_PRUNE_OLD_MESSAGES=false # set to true to enable automatic message cleanup
     SLACK_KEEP_MESSAGES_SECONDS=120 # how long to keep messages before cleanup (in seconds)
+
+    # Access Registry / GLPI (optional until feature is used)
+    GLPI_URL=https://glpi.example.com
+    GLPI_OAUTH_CLIENT_ID=...
+    GLPI_OAUTH_CLIENT_SECRET=...
+    GLPI_USERNAME=svc-access-registry
+    GLPI_PASSWORD=...
+    ACCESS_MANAGER_EMAILS= # comma-separated; Admins are always Access Managers
+    ACCESS_MANAGER_GROUPS= # Azure AD group IDs/names, comma-separated
    ```
+
+Azure AD app registration should define an app role **`AccessManager`** (same pattern as `Admin`). Admins automatically have Access Manager access.
 
 ## Usage
 
@@ -108,6 +123,16 @@ Access the admin dashboard at `/admin` for:
 - View all tracked Slack messages
 - Manually trigger cleanup
 - Monitor message activity
+
+### Access management
+
+Users with Access Manager (or Admin) can open `/access-management` to:
+- Search GLPI users
+- View / create / update / soft-delete Accesses for a user
+- Find-or-create custom Projects (autocomplete, same idea as monitor groups)
+- Review the Access audit log at `/access-management/audit`
+
+GLPI OAuth client must use the **Password** grant with the `api` scope. Soft-delete uses `DELETE` without `force` (item goes to trash).
 
 ## Deployment
 

@@ -5,6 +5,10 @@ import {
   resolveActorIdentity,
   type AzureActorClaims,
 } from "@/lib/auth/actor";
+import {
+  isAccessManagerFromClaims,
+  isAdminFromClaims,
+} from "@/lib/auth/access-manager";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -63,10 +67,16 @@ export const authOptions: NextAuthOptions = {
           token.groups = profileData.groups || [];
         }
 
-        const adminEmails = process.env.ADMIN_EMAILS
-          ? process.env.ADMIN_EMAILS.split(",").map((e) => e.trim())
-          : [];
-        token.isAdmin = adminEmails.includes(actorEmail);
+        token.isAdmin = isAdminFromClaims({
+          email: actorEmail,
+          roles: token.roles,
+          groups: token.groups,
+        });
+        token.isAccessManager = isAccessManagerFromClaims({
+          email: actorEmail,
+          roles: token.roles,
+          groups: token.groups,
+        });
       }
       return token;
     },
@@ -78,6 +88,7 @@ export const authOptions: NextAuthOptions = {
           roles: string[];
           groups: string[];
           isAdmin: boolean;
+          isAccessManager: boolean;
         };
         user.id = token.sub!;
         user.roles = (token.roles as string[]) || [];
@@ -85,24 +96,17 @@ export const authOptions: NextAuthOptions = {
         if (typeof token.email === "string" && token.email) {
           user.email = token.email;
         }
-        const adminGroups = process.env.ADMIN_GROUPS
-          ? process.env.ADMIN_GROUPS.split(",").map((g) => g.trim())
-          : [];
-        const isAdminFromToken = Boolean(token.isAdmin);
-        const isAdminFromGroups =
-          token.groups &&
-          Array.isArray(token.groups) &&
-          token.groups.some((group) =>
-            adminGroups.includes(group as string),
-          );
-        const isAdminFromRoles =
-          token.roles &&
-          Array.isArray(token.roles) &&
-          token.roles.includes("Admin");
+        const claims = {
+          email: user.email,
+          roles: token.roles,
+          groups: token.groups,
+        };
         user.isAdmin =
-          isAdminFromToken ||
-          Boolean(isAdminFromGroups) ||
-          Boolean(isAdminFromRoles);
+          Boolean(token.isAdmin) || isAdminFromClaims(claims);
+        user.isAccessManager =
+          Boolean(token.isAccessManager) ||
+          user.isAdmin ||
+          isAccessManagerFromClaims(claims);
       }
       return session;
     },

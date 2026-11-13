@@ -31,6 +31,17 @@ declare global {
       ADMIN_EMAILS?: string;
       ADMIN_GROUPS?: string;
 
+      // Access Manager
+      ACCESS_MANAGER_EMAILS?: string;
+      ACCESS_MANAGER_GROUPS?: string;
+
+      // GLPI high-level API (OAuth)
+      GLPI_URL?: string;
+      GLPI_OAUTH_CLIENT_ID?: string;
+      GLPI_OAUTH_CLIENT_SECRET?: string;
+      GLPI_USERNAME?: string;
+      GLPI_PASSWORD?: string;
+
       // Environment
       NODE_ENV: 'development' | 'production' | 'test';
     }
